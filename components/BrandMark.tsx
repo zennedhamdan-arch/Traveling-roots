@@ -13,6 +13,7 @@ type BrandMarkProps = Readonly<{
   stacked?: boolean;
 }>;
 
+/** Rendered height in CSS pixels, used for the `sizes` hint. */
 const PIXEL_SIZE: Record<BrandMarkSize, number> = {
   hero: 132,
   nav: 40,
@@ -21,8 +22,10 @@ const PIXEL_SIZE: Record<BrandMarkSize, number> = {
 
 /**
  * The Traveling Roots lock-up.
- * Uses the official logo when one has been supplied (see `brand.logo`),
- * otherwise a typographic wordmark — never an invented logo.
+ *
+ * Uses the official logo when one has been dropped into `public/images/`
+ * (see `scripts/detect-logo.mjs`), otherwise a typographic wordmark — never
+ * an invented or redrawn logo.
  */
 export default function BrandMark({
   size = "nav",
@@ -30,18 +33,18 @@ export default function BrandMark({
   stacked = false,
 }: BrandMarkProps): React.JSX.Element {
   const classes = [styles.root, styles[size], className].filter(Boolean).join(" ");
-  const { src, width, height } = brand.logo;
+  const logo = brand.logo;
 
-  if (src) {
+  if (logo) {
     const rendered = PIXEL_SIZE[size];
     return (
-      <span className={classes}>
+      <span className={classes} data-mask={logo.mask}>
         <Image
-          src={src}
+          src={logo.src}
           alt={`${restaurant.name} logo`}
-          width={width}
-          height={height}
-          sizes={`${rendered}px`}
+          width={logo.width}
+          height={logo.height}
+          sizes={`${rendered * 2}px`}
           priority={size === "hero"}
           className={styles.image}
         />

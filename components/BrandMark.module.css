@@ -11,6 +11,14 @@
   object-fit: contain;
 }
 
+/* A logo saved without transparency would show its background corners against
+   the dark hero. A circular mask (only ever applied to near-square artwork)
+   removes the background without cropping the mark itself. */
+.root[data-mask="circle"] {
+  border-radius: 50%;
+  overflow: hidden;
+}
+
 .wordmark {
   display: inline-flex;
   align-items: baseline;

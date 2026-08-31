@@ -5,52 +5,68 @@ import styles from "./MenuItem.module.css";
 
 type MenuItemProps = Readonly<{
   item: MenuItem;
-  hidePrice?: boolean;
+  layout: "cards" | "list";
+  headingLevel: "h4" | "h5";
 }>;
 
 /**
- * A single dish. Photography is optional — with no image the card falls back
- * to a typographic tile rather than a broken frame or a stock photo.
+ * A single dish.
+ *
+ * "list"  — editorial price list: name, leader, price. The right choice for a
+ *           long menu with no photography.
+ * "cards" — photo card, used automatically once dishes have images.
  */
-export default function MenuItemCard({
+export default function MenuItemRow({
   item,
-  hidePrice = false,
+  layout,
+  headingLevel,
 }: MenuItemProps): React.JSX.Element {
-  const showPrice = !hidePrice && item.price !== null;
+  const Heading = headingLevel;
+  const hasVariants = item.variants != null && item.variants.length > 0;
 
   return (
-    <li className={styles.item} id={item.id}>
-      <div className={styles.media}>
-        {item.image ? (
-          <Image
-            src={item.image}
-            alt={item.name}
-            fill
-            className={styles.image}
-            sizes="(min-width: 1024px) 320px, (min-width: 768px) 40vw, 88vw"
-            loading="lazy"
-          />
-        ) : (
-          <span className={styles.mediaFallback} aria-hidden="true">
-            {item.name.charAt(0)}
-          </span>
-        )}
-        {item.signature ? <span className={styles.signature}>House speciality</span> : null}
-      </div>
+    <li className={styles.item} data-layout={layout} id={item.id}>
+      {layout === "cards" ? (
+        <div className={styles.media}>
+          {item.image ? (
+            <Image
+              src={item.image}
+              alt={item.name}
+              fill
+              className={styles.image}
+              sizes="(min-width: 1024px) 320px, (min-width: 768px) 40vw, 88vw"
+              loading="lazy"
+            />
+          ) : (
+            <span className={styles.mediaFallback} aria-hidden="true">
+              {item.name.charAt(0)}
+            </span>
+          )}
+        </div>
+      ) : null}
 
       <div className={styles.body}>
         <div className={styles.titleRow}>
-          <h4 className={styles.name}>{item.name}</h4>
-          {showPrice ? (
-            <p className={styles.price}>{item.price}</p>
-          ) : (
-            <p className={styles.priceMuted} aria-hidden="true">
-              —
-            </p>
-          )}
+          <Heading className={styles.name}>{item.name}</Heading>
+          <span className={styles.leader} aria-hidden="true" />
+          {item.price !== null ? <p className={styles.price}>{item.price}</p> : null}
         </div>
 
-        <p className={styles.description}>{item.description}</p>
+        {item.description ? (
+          <p className={styles.description}>{item.description}</p>
+        ) : null}
+
+        {hasVariants ? (
+          <ul className={styles.variants}>
+            {item.variants?.map((variant) => (
+              <li key={variant.label} className={styles.variant}>
+                <span className={styles.variantLabel}>{variant.label}</span>
+                <span className={styles.variantLeader} aria-hidden="true" />
+                <span className={styles.variantPrice}>{variant.price}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
         {item.availability ? (
           <p className={styles.availability}>{item.availability}</p>

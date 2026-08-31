@@ -105,21 +105,15 @@ export const restaurant: RestaurantData = {
   ], // [official] "Monday - Sunday 12:00 - 22:00"
   socials: [
     {
+      label: "Instagram",
+      href: "https://www.instagram.com/traveling_roots_rwanda/",
+      a11yLabel: "Traveling Roots on Instagram (opens in a new tab)",
+    }, // supplied by the restaurant
+    {
       label: "Facebook",
       href: "https://www.facebook.com/people/Traveling-Roots-Rwanda/61559122592817/",
       a11yLabel: "Traveling Roots on Facebook (opens in a new tab)",
     },
-    // ---------------------------------------------------------------------
-    // INSTAGRAM — NOT YET VERIFIED.
-    // An official Traveling Roots Rwanda Instagram account could not be
-    // confirmed. Uncomment and set the real handle when you have it; the
-    // "Follow on Instagram" action appears automatically everywhere.
-    // ---------------------------------------------------------------------
-    // {
-    //   label: "Instagram",
-    //   href: "https://www.instagram.com/<HANDLE>/",
-    //   a11yLabel: "Traveling Roots on Instagram (opens in a new tab)",
-    // },
   ],
   about: [
     // Verbatim source: the restaurant's own "Who We Are" text. [official]

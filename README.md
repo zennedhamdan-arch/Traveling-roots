@@ -30,13 +30,13 @@ npm run dev      # http://localhost:3000
 | `npm run typecheck`   | `tsc --noEmit`, strict                              |
 | `npm run lint`        | ESLint (flat config)                                |
 | `npm run frames:check`| Validates the 29 frames: presence, size, weight     |
+| `npm run logo:detect` | Re-scans `public/images/` for the logo              |
 
 ---
 
-## ⚠️ Three things still need your real assets
+## ⚠️ One thing still needs your real asset
 
-Everything is wired up and typed. Each one is a drop-in replacement — no
-component changes required.
+The menu and Instagram are in. Only the frames and the logo file remain.
 
 ### 1. The 29 frames — `public/sequence/`
 
@@ -67,51 +67,57 @@ Once the real frames are in, delete `scripts/generate-placeholder-frames.mjs`.
 cwebp -q 80 -m 6 -resize 1600 0 frame-01.png -o frame-01.webp
 ```
 
-### 2. The logo — `public/images/logo.*`
+### 2. The logo — `public/images/logo.png`
 
 The official logo is **not** recreated or approximated anywhere in this repo.
-Until you supply it, every brand lock-up falls back to a clean typographic
-wordmark.
+Until the file is present, every brand lock-up falls back to a clean
+typographic wordmark.
 
-To use the real one, save it and set the path in `data/site.ts`:
+Installing it is a pure drop-in — no code change:
 
-```ts
-export const brand = {
-  logo: { src: "/images/logo.png", width: 512, height: 505 },
-  ...
-};
+```bash
+cp your-logo.png public/images/logo.png
+npm run build          # or npm run dev
 ```
 
-It then appears in the hero, navbar and footer automatically.
+`scripts/detect-logo.mjs` runs automatically on `predev` / `prebuild`, finds
+the file (`.svg`, `.png`, `.webp` or `.jpg`), reads its real dimensions and
+writes `data/logo.generated.ts`. It then appears in the hero, navbar and
+footer.
 
-### 3. The menu — `data/menu.ts`
+If the file has no transparency, the script detects that and applies a
+circular mask — but only to near-square artwork, so a wide wordmark is never
+cropped. That hides the background corners, which would otherwise show as a
+white box against the dark hero.
 
-**No dishes, prices or ingredients have been invented.** The file currently
-holds category shells with clearly-labelled placeholder rows and `price: null`.
-While `MENU_STATUS.isPlaceholder` is `true`, the UI hides all prices and shows
-a visible notice, so nothing fake is ever presented to a visitor as real.
+---
 
-To go live:
+## The menu
 
-1. Replace the `menu` array with the real data.
-2. Set `MENU_STATUS.isPlaceholder = false`.
-3. Drop dish photos into `public/images/food/` and reference them as
-   `/images/food/<file>.webp`. Items without a photo fall back to a
-   typographic tile — never a stock image.
-4. `npm run typecheck` will catch any malformed row.
+**Done.** `data/menu.ts` holds the full menu, transcribed verbatim from the
+official 4-page Canva menu: **11 categories, ~100 items**, every price, every
+description and both dietary marks. Nothing is invented.
 
-```ts
-{
-  id: "beef-burger",
-  name: "Beef Burger",
-  description: "…",
-  price: "RWF 8,500",
-  image: "/images/food/beef-burger.webp",
-  dietary: ["Contains nuts"],
-  signature: true,
-  availability: "Thursday – Saturday",
-}
-```
+- Prices: the printed menu writes `6K` and the coffee list writes the same
+  amounts as `2000rwf`. Both are Rwandan francs, so `6K` renders as
+  `6,000 RWF`. No amount was converted, rounded or altered.
+- Obvious typography slips in the source (`CABAGE`, `BEFF`, `PINAPPLE`,
+  `TALAPIA`) are corrected. House names (`Winnaz Chicken`, `Orky Porky`,
+  `Hard Tac`) are left exactly as printed.
+- Portion pricing (pork ribs 400g/500g/1kg, crêpe fillings, wine by the
+  glass/bottle, juices) uses the `variants` field.
+- Drinks is one tab holding nine sub-sections, so the tab strip stays usable.
+
+**⚠ Please have the kitchen confirm the dietary marks once.** They are
+transcribed from the badges on the artwork and each one is consistent with the
+dish's own listed ingredients, but this is safety-relevant information.
+
+### Adding dish photography
+
+Drop files into `public/images/food/` and add `image: "/images/food/x.webp"`
+to an item. The category switches from the editorial price list to a photo
+card grid **automatically** — no layout flag to set. Items without a photo
+fall back to a typographic tile, never a stock image.
 
 ---
 
@@ -128,12 +134,7 @@ a provenance comment on every field. Nothing is hard-coded in components.
 | Address  | NM 227 St, Ruhengeri / Musanze, Rwanda            | Petit Futé        |
 | Email    | TravelingRootsRwanda@gmail.com                    | Facebook page     |
 | Facebook | Traveling Roots Rwanda                            | Facebook          |
-
-**Instagram is not verified.** No official account could be confirmed, so the
-"Follow on Instagram" action is **omitted entirely** rather than pointing at a
-guessed handle. Add the real one to `restaurant.socials` in
-`data/restaurant.ts` (there's a commented-out stub) and the action appears in
-the reservation section and footer automatically.
+| Instagram| @traveling_roots_rwanda                           | the restaurant    |
 
 The Canva menu link is kept in the data file for reference but is **never**
 used as the primary menu experience.
@@ -158,8 +159,9 @@ components/
 
 data/
   restaurant.ts           Verified business data (single source of truth)
-  menu.ts                 Menu data + types
+  menu.ts                 The full real menu + types
   site.ts                 Nav, copy, caption timeline, brand config
+  logo.generated.ts       Auto-generated by scripts/detect-logo.mjs
 
 lib/
   sequence.ts             Frame URLs + every tuning constant
@@ -264,7 +266,8 @@ Then:
 - Semantic landmarks, one `<h1>`, ordered `h2`/`h3`/`h4`.
 - Skip link; visible focus rings on every interactive element.
 - Menu categories are a real ARIA tablist: arrow keys, Home/End, roving
-  `tabIndex`, `aria-controls`.
+  `tabIndex`, `aria-controls`. Heading levels stay correctly nested when a
+  category has sub-sections.
 - Captions use GSAP `autoAlpha`, which toggles `visibility` — hidden captions
   leave the accessibility tree automatically.
 - The loader is a labelled `progressbar`.

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
-import { MENU_STATUS, dietaryLegend, menu } from "@/data/menu";
+import { dietaryLegend, menu } from "@/data/menu";
 import { SECTION_IDS } from "@/data/site";
 import { restaurant } from "@/data/restaurant";
 import MenuCategory from "./MenuCategory";
@@ -72,12 +72,6 @@ export default function Menu(): React.JSX.Element {
           </p>
         </div>
 
-        {MENU_STATUS.isPlaceholder ? (
-          <p className={styles.notice} role="status">
-            {MENU_STATUS.notice}
-          </p>
-        ) : null}
-
         <div
           ref={tabsRef}
           role="tablist"
@@ -116,7 +110,7 @@ export default function Menu(): React.JSX.Element {
             tabIndex={0}
             className={styles.panel}
           >
-            <MenuCategory category={category} hidePrices={MENU_STATUS.isPlaceholder} />
+            <MenuCategory category={category} />
           </div>
         ))}
 
@@ -132,7 +126,7 @@ export default function Menu(): React.JSX.Element {
             </ul>
             <p className={styles.legendNote}>
               Tell us about any allergies or dietary needs when you order — the
-              kitchen will work with you.
+              kitchen will work with you. All prices in Rwandan francs (RWF).
             </p>
           </div>
         ) : null}

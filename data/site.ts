@@ -1,3 +1,5 @@
+import { detectedLogo } from "./logo.generated";
+
 /**
  * Site-level copy, navigation and section ids.
  * Centralised so no component hard-codes strings or anchor targets.
@@ -19,20 +21,20 @@ export type SectionId = (typeof SECTION_IDS)[keyof typeof SECTION_IDS];
  * Brand mark.
  *
  * The official Traveling Roots logo is NOT recreated or approximated here.
- * Until the real asset is supplied, `logo.src` stays `null` and every brand
- * lock-up falls back to a clean typographic wordmark.
  *
- * TO USE THE REAL LOGO:
- *   1. Save it to `public/images/logo.png` (or .svg / .webp).
- *   2. Set `src` to that path and `width` / `height` to its intrinsic size.
- * It then appears in the hero, the navbar and the footer automatically.
+ * TO USE THE REAL LOGO — just drop the file in, nothing else:
+ *
+ *     cp your-logo.png public/images/logo.png
+ *     npm run build          # or npm run dev
+ *
+ * `scripts/detect-logo.mjs` runs automatically, finds it, reads its real
+ * dimensions and writes `data/logo.generated.ts`. It then appears in the hero,
+ * the navbar and the footer. Until a file exists, every lock-up falls back to
+ * a clean typographic wordmark.
  */
 export const brand = {
-  logo: {
-    src: null as string | null,
-    width: 512,
-    height: 505,
-  },
+  /** Auto-detected from public/images/. `null` until a logo file is added. */
+  logo: detectedLogo,
   /** Wordmark fallback, split so it can be set on two lines. */
   wordmark: { top: "Traveling", bottom: "Roots" },
 } as const;

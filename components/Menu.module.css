@@ -22,15 +22,6 @@
   font-size: clamp(1rem, 2.3vw, 1.08rem);
 }
 
-.notice {
-  margin: 0 0 clamp(1.75rem, 4vw, 2.5rem);
-  padding: 0.95rem 1.15rem;
-  border-left: 2px solid var(--tr-gold);
-  background: var(--tr-surface-alt);
-  color: var(--tr-text-muted);
-  font-size: 0.9rem;
-}
-
 /* --------------------------------------------------------------------------
    Category tabs
    Mobile: horizontally scrollable strip with large touch targets.
@@ -40,6 +31,9 @@
 .tabs {
   display: flex;
   gap: 0.35rem;
+  /* 11 real categories: a scrollable strip on mobile, wrapping rows on
+     desktop rather than an off-screen overflow. */
+  flex-wrap: nowrap;
   margin-bottom: clamp(2rem, 5vw, 3rem);
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--tr-line);
@@ -98,6 +92,14 @@
   .tab:hover {
     color: var(--tr-forest);
     background: var(--tr-surface-alt);
+  }
+}
+
+@media (min-width: 1024px) {
+  .tabs {
+    flex-wrap: wrap;
+    row-gap: 0.15rem;
+    overflow-x: visible;
   }
 }
 
