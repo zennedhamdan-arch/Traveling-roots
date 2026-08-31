@@ -48,6 +48,12 @@ assembles from frame 01 → 29, with a tick scale so you can see which frame is
 on screen. They exist purely so the scroll mechanic could be built and tuned.
 They deliberately invent nothing about the real animation.
 
+> **The frames currently in the repo are placeholders.** The reference clip
+> supplied so far is Pinterest-sourced stock food (sandwiches and tacos) that
+> Traveling Roots does not serve, cut together from three unrelated scenes.
+> See **[docs/frame-shoot-guide.md](docs/frame-shoot-guide.md)** for a
+> hand-to-the-camera spec for shooting the real sequence.
+
 **To install the real frames**, use the ingest script — it handles the messy
 filenames a frame extractor produces:
 
@@ -56,15 +62,36 @@ npm run frames:ingest -- /path/to/extracted-frames
 npm run frames:check
 ```
 
-`frames:ingest` sorts by the **number** in each filename, not alphabetically.
-That one detail matters: a plain sort puts `Serial10` before `Serial2`, which
-is the most common way an image sequence ends up scrambled. It then normalises
-every frame to one size, encodes WebP, and writes `frame-01.webp … frame-NN.webp`.
-Frames are never cropped or stretched — an odd-sized frame is padded and you
-get a warning naming it. Gaps and duplicates in the source numbering are
-reported before anything is written.
+`frames:ingest` does the four things that go wrong with a raw extraction:
 
-If your files are already named correctly you can just copy them in.
+| Problem | What the script does |
+| --- | --- |
+| A plain sort puts `Serial10` before `Serial2` | Sorts **numerically** |
+| A fade-through-black becomes a dead frame when scrubbed | Drops frames below a luma threshold |
+| A montage hard-cuts mid-scroll | Detects scenes by colour distance and uses **one** |
+| Cross-dissolve frames look like double exposures | Trims them from the scene edges |
+
+It then resamples to exactly 29, normalises size, and encodes WebP. Frames are
+never cropped or stretched — an odd-sized frame is padded and named in a
+warning.
+
+Useful flags:
+
+```bash
+npm run frames:ingest -- raw-frames --dry-run       # analyse, write nothing
+npm run frames:ingest -- raw-frames --scene 2       # pick a specific scene
+npm run frames:ingest -- raw-frames --scene all     # keep the montage
+npm run frames:ingest -- raw-frames --trim 0        # keep boundary frames
+```
+
+Start with `--dry-run`: it prints the detected scenes and exactly which source
+frame lands in each output slot.
+
+**If there are fewer than 29 usable frames**, the script generates the missing
+in-betweens by blending neighbours rather than repeating them — 7 frames
+repeated four times each is a visible staircase when scrubbed. Interpolation is
+a cross-dissolve, not true motion, so more source frames is always better. Pass
+`--no-interpolate` to opt out.
 
 `frames:check` then verifies all 29 exist, share one aspect ratio, and stay
 under a 180 KB-per-frame mobile budget — and runs a **continuity pass**:
