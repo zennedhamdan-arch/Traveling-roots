@@ -1,15 +1,21 @@
 import { SECTION_IDS, reservation } from "@/data/site";
 import { restaurant } from "@/data/restaurant";
 import { primaryActions, secondaryActions } from "@/lib/actions";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import ButtonLink from "./Button";
+import ReservationForm from "./ReservationForm";
 import styles from "./ReservationCTA.module.css";
 
 /**
- * The conversion moment. Deliberately simple: one headline, two decisions.
- * No fake booking form — reservations really are taken by phone and WhatsApp.
+ * The conversion moment. One headline, two paths: the fast path for people
+ * who want to talk now (call / WhatsApp), and — when the database is
+ * connected — a request form for people who prefer to type. No fake booking
+ * confirmation either way: a submitted form is a request until a human
+ * calls back.
  */
 export default function ReservationCTA(): React.JSX.Element {
   const hours = restaurant.hours[0];
+  const formEnabled = isSupabaseConfigured;
 
   return (
     <section
@@ -59,6 +65,15 @@ export default function ReservationCTA(): React.JSX.Element {
               {restaurant.city}, {restaurant.country} · {hours.days}{" "}
               {hours.opens}–{hours.closes}
             </p>
+          ) : null}
+
+          {formEnabled ? (
+            <div className={styles.formWrap}>
+              <p className={styles.formDivider} aria-hidden="true">
+                — or send a request —
+              </p>
+              <ReservationForm />
+            </div>
           ) : null}
         </div>
       </div>

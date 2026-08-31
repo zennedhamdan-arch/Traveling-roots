@@ -506,16 +506,32 @@ no redeploy.
 
 | Dashboard tab | What you can do |
 | --- | --- |
-| **Overview** | Counts at a glance: menu items, categories, gallery photos, new/all pickup orders, new/all reservation requests |
+The dashboard navigation is a grouped sidebar on desktop and a hamburger drawer on phones: **Dashboard** (Overview), **Website** (Hero video, Menu, Experiences, Gallery, Offers, Testimonials), **Business** (Business info), **Customers** (Reservations, Pickup orders), **System** (Sign out).
+
+| Page | What you can do |
+| --- | --- |
+| **Overview** | Counts (menu items, categories, gallery photos, experiences, active offers, new/all reservations, new/all pickup orders), recent reservations and orders, quick actions |
+| **Hero video** | Upload a video that replaces the 29-frame scroll sequence; deactivate it to go back to the frames |
 | **Menu** | Edit any item's name, price (RWF), description and variants; publish or hide items and whole categories |
-| **Hero** | Upload a video that replaces the 29-frame scroll sequence; deactivate it to go back to the frames |
+| **Experiences** | Add, edit, photograph, reorder, hide or delete the public experiences cards (duration and price optional) |
 | **Gallery** | Upload photos (JPG/PNG/WebP/AVIF, up to 10 MB) with captions and alt text, reorder them, hide them or delete them — no extra SQL to run, the table and storage bucket are part of the standard setup |
+| **Offers / Testimonials** | Manage specials and guest quotes (add, edit, activate/publish, delete) |
+| **Business info** | Name, phone, WhatsApp, email, address, directions URL, opening hours and social links — consumed live by the public site |
 | **Pickup orders** | Orders submitted from the public **`/order`** page; call or WhatsApp the guest to confirm, then move the order through `new → accepted → preparing → ready → completed / cancelled` |
-| **Reservations** | Read every reservation request; filter by status and move them through `new → contacted → confirmed / declined / archived` |
+| **Reservations** | Read every reservation request (form or phone); filter by status and move them through `new → contacted → confirmed / declined / archived` |
 
 Everything the database stores is also editable directly in Supabase's table
 editor (business info, experiences, offers, testimonials, social links) —
 those just don't have dedicated dashboard UI yet.
+
+**Reservations & the public site.** The reserve section now offers both the
+fast path (call / WhatsApp) and, when Supabase is configured, a request form
+(name, phone, date, time, guests) that writes straight into
+`reservation_requests` — subject to the same RLS as everything else. The
+public site also has a gallery section (admin-managed photos, lightbox with
+keyboard and swipe), a location section with the restaurant's own Google Maps
+embed and directions/call/WhatsApp buttons, DB-driven experiences with the
+verified set as fallback, and a fuller footer.
 
 **How online ordering works.** The public `/order` page (linked from the nav
 and the reservation section) lists the live menu with quantity steppers; the
