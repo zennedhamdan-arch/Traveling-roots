@@ -1,0 +1,77 @@
+.category {
+  display: block;
+}
+
+.header {
+  margin-bottom: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.title {
+  margin: 0 0 0.4rem;
+  font-size: clamp(1.6rem, 4.5vw, 2.2rem);
+  font-weight: 400;
+}
+
+.intro {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--tr-text-muted);
+  font-size: 0.97rem;
+  font-style: italic;
+}
+
+/* --- sub-sections (Drinks → Tea, Coffee, …) --- */
+
+.section + .section {
+  margin-top: clamp(2.25rem, 5vw, 3.25rem);
+}
+
+.sectionTitle {
+  margin: 0 0 1.1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--tr-line);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--tr-moss);
+}
+
+.note {
+  margin: -0.4rem 0 1rem;
+  color: var(--tr-text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* --- item container --- */
+
+.items {
+  display: grid;
+  margin: 0;
+}
+
+/* Editorial price list: tight rows, two readable columns on wider screens. */
+.items[data-layout="list"] {
+  gap: clamp(1.15rem, 2.5vw, 1.6rem) clamp(2.5rem, 6vw, 5rem);
+  align-items: start;
+}
+
+/* Photo cards, used automatically once dishes have images. */
+.items[data-layout="cards"] {
+  gap: clamp(1.25rem, 3vw, 2rem);
+}
+
+@media (min-width: 768px) {
+  .items[data-layout="list"],
+  .items[data-layout="cards"] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .items[data-layout="cards"] {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

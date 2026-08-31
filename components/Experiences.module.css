@@ -1,0 +1,75 @@
+.section {
+  padding-block: var(--space-section);
+  background: var(--tr-ink);
+  color: var(--tr-cream);
+}
+
+.head {
+  max-width: 44rem;
+  margin-bottom: clamp(2.5rem, 6vw, 4rem);
+}
+
+
+.head :global(.eyebrow) {
+  color: var(--tr-gold);
+}
+
+.headline {
+  margin: 0 0 1.1rem;
+  font-size: clamp(2rem, 6.4vw, 3.4rem);
+  font-weight: 300;
+}
+
+.hours {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--tr-sand);
+  opacity: 0.7;
+}
+
+.grid {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  background: var(--tr-line-dark);
+  border-block: 1px solid var(--tr-line-dark);
+}
+
+.card {
+  padding: clamp(1.75rem, 4.5vw, 2.75rem) clamp(0rem, 2vw, 2rem);
+  background: var(--tr-ink);
+}
+
+.cardTitle {
+  margin: 0 0 0.7rem;
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  font-weight: 400;
+  color: var(--tr-cream);
+}
+
+.cardBody {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 0.97rem;
+  color: var(--tr-stone);
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .card {
+    padding-inline: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .card:first-child {
+    padding-left: 0;
+  }
+
+  .card:last-child {
+    padding-right: 0;
+  }
+}

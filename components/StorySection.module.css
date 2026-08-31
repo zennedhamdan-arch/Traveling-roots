@@ -1,0 +1,101 @@
+.section {
+  position: relative;
+  padding-block: var(--space-section);
+  background: var(--tr-surface);
+  color: var(--tr-text);
+}
+
+/* A soft seam out of the dark cinematic section above. */
+.section::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: clamp(80px, 14vw, 180px);
+  background: linear-gradient(
+    to bottom,
+    rgba(14, 26, 19, 0.06),
+    rgba(14, 26, 19, 0)
+  );
+  pointer-events: none;
+}
+
+.intro {
+  max-width: 46rem;
+}
+
+.headline {
+  margin: 0 0 clamp(1.5rem, 4vw, 2.25rem);
+  font-size: clamp(2.1rem, 7vw, 3.9rem);
+  font-weight: 300;
+  line-height: 1.04;
+}
+
+.body {
+  display: grid;
+  gap: 1.15rem;
+  max-width: var(--measure);
+  font-size: clamp(1rem, 2.4vw, 1.12rem);
+  color: var(--tr-text-muted);
+}
+
+.place {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--tr-moss);
+}
+
+.placeLine {
+  display: block;
+  width: clamp(28px, 6vw, 56px);
+  height: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+/* --- pillars --- */
+
+.pillars {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 2.5rem);
+  margin: clamp(3.5rem, 9vw, 6rem) 0 0;
+  padding-top: clamp(2.25rem, 5vw, 3.25rem);
+  border-top: 1px solid var(--tr-line);
+}
+
+.pillar {
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+}
+
+.pillarIndex {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: var(--tr-gold);
+}
+
+.pillarTitle {
+  margin: 0;
+  font-size: clamp(1.25rem, 3.2vw, 1.55rem);
+  font-weight: 400;
+}
+
+.pillarBody {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--tr-text-muted);
+  font-size: 0.97rem;
+}
+
+@media (min-width: 768px) {
+  .pillars {
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(2rem, 4vw, 3.5rem);
+  }
+}

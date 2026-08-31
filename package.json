@@ -1,0 +1,39 @@
+{
+  "name": "traveling-roots",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "predev": "node scripts/detect-logo.mjs && node scripts/measure-frames.mjs",
+    "dev": "next dev",
+    "prebuild": "node scripts/detect-logo.mjs && node scripts/measure-frames.mjs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "frames:check": "node scripts/check-frames.mjs",
+    "logo:detect": "node scripts/detect-logo.mjs",
+    "frames:ingest": "node scripts/ingest-frames.mjs",
+    "frames:measure": "node scripts/measure-frames.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "gsap": "^3.15.0",
+    "next": "^15.5.24",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.24",
+    "sharp": "^0.35.4",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}

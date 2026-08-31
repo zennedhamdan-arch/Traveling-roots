@@ -1,0 +1,184 @@
+.item {
+  display: grid;
+  align-content: start;
+}
+
+.item[data-layout="cards"] {
+  grid-template-rows: auto 1fr;
+  border-bottom: 1px solid var(--tr-line);
+  padding-bottom: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+/* --------------------------------------------------------------------------
+   Media (cards layout only)
+   -------------------------------------------------------------------------- */
+
+.media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 1.1rem;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--tr-surface-alt);
+  display: grid;
+  place-items: center;
+}
+
+.image {
+  object-fit: cover;
+  transition: transform 0.8s var(--ease-out);
+}
+
+/* Typographic fallback when a dish has no photograph — never a stock photo. */
+.mediaFallback {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 8vw, 3.75rem);
+  font-style: italic;
+  color: var(--tr-stone);
+  opacity: 0.5;
+  user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   Body
+   -------------------------------------------------------------------------- */
+
+.body {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.12rem, 3vw, 1.3rem);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+/* Classic menu leader between the dish and its price. */
+.leader {
+  flex: 1 1 auto;
+  min-width: 1.5rem;
+  height: 1px;
+  margin-bottom: 0.28em;
+  background-image: linear-gradient(
+    to right,
+    var(--tr-line) 0 2px,
+    transparent 2px 5px
+  );
+  background-size: 5px 1px;
+  background-repeat: repeat-x;
+}
+
+.item[data-layout="cards"] .leader {
+  display: none;
+}
+
+.item[data-layout="cards"] .titleRow {
+  justify-content: space-between;
+}
+
+.price {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--tr-forest);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.description {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--tr-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* --------------------------------------------------------------------------
+   Portion / option pricing
+   -------------------------------------------------------------------------- */
+
+.variants {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.35rem 0 0;
+  max-width: 26rem;
+}
+
+.variant {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--tr-text-muted);
+}
+
+.variantLabel {
+  flex-shrink: 0;
+}
+
+.variantLeader {
+  flex: 1 1 auto;
+  min-width: 1rem;
+  height: 1px;
+  margin-bottom: 0.28em;
+  background-image: linear-gradient(
+    to right,
+    var(--tr-line) 0 2px,
+    transparent 2px 5px
+  );
+  background-size: 5px 1px;
+  background-repeat: repeat-x;
+}
+
+.variantPrice {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--tr-forest);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Meta
+   -------------------------------------------------------------------------- */
+
+.availability {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tr-clay);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.3rem 0 0;
+}
+
+.tag {
+  padding: 0.18rem 0.55rem;
+  border: 1px solid var(--tr-line);
+  border-radius: 999px;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: var(--tr-moss);
+}
+
+@media (hover: hover) {
+  .item[data-layout="cards"]:hover .image {
+    transform: scale(1.04);
+  }
+}
