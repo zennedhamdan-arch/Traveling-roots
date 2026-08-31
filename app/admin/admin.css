@@ -1,0 +1,633 @@
+/* ==========================================================================
+   Admin dashboard styles
+
+   Deliberately plain. This is a tool, not a showcase — the owner is standing
+   in a kitchen on a phone, and clarity beats atmosphere. It borrows the brand
+   palette so it feels like the same product, but nothing here is cinematic.
+
+   Not a CSS Module: these are broad, stable class names shared across every
+   admin page, and hashing them would only add indirection.
+   ========================================================================== */
+
+.admin-root {
+  --a-bg: #121814;
+  --a-surface: #1a221d;
+  --a-surface-2: #222c26;
+  --a-border: #2f3b34;
+  --a-text: #eef2ee;
+  --a-muted: #9aa89f;
+  --a-accent: #c8a45c;
+  --a-danger: #d4674a;
+  --a-success: #7fb069;
+
+  min-height: 100svh;
+  background: var(--a-bg);
+  color: var(--a-text);
+  font-family: var(--font-body, system-ui, sans-serif);
+  -webkit-text-size-adjust: 100%;
+}
+
+.admin-shell {
+  min-height: 100svh;
+}
+
+.admin-centered {
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+/* -------------------------------------------------------------- header */
+
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(18, 24, 20, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--a-border);
+}
+
+.admin-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem clamp(1rem, 4vw, 2rem);
+}
+
+.admin-brand {
+  font-family: var(--font-display, serif);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: var(--a-text);
+  text-decoration: none;
+}
+
+.admin-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.admin-who {
+  font-size: 0.78rem;
+  color: var(--a-muted);
+  /* An email is long and not the point; never let it push the buttons off. */
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-nav {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0 clamp(0.5rem, 3vw, 1.5rem) 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-nav-link {
+  flex: 0 0 auto;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--a-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-nav-link:hover {
+  color: var(--a-text);
+  background: var(--a-surface-2);
+}
+
+.admin-main {
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+/* -------------------------------------------------------------- blocks */
+
+.admin-card {
+  background: var(--a-surface);
+  border: 1px solid var(--a-border);
+  border-radius: 14px;
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.admin-narrow {
+  width: min(26rem, 100%);
+}
+
+.admin-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--a-accent);
+}
+
+.admin-title {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display, serif);
+  font-weight: 300;
+  font-size: clamp(1.6rem, 4.5vw, 2.2rem);
+  letter-spacing: -0.01em;
+}
+
+.admin-subtitle {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.admin-muted {
+  margin: 0 0 0.75rem;
+  color: var(--a-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.admin-lede {
+  max-width: 46ch;
+  margin-bottom: 1.5rem;
+}
+
+.admin-hint {
+  display: block;
+  margin: 0.35rem 0 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--a-muted);
+}
+
+.admin-quote {
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--a-border);
+  font-size: 0.88rem;
+  color: var(--a-muted);
+}
+
+.admin-code {
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #0d120f;
+  border: 1px solid var(--a-border);
+  font-size: 0.78rem;
+  overflow-x: auto;
+}
+
+/* -------------------------------------------------------------- forms */
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.admin-label {
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+}
+
+.admin-input {
+  width: 100%;
+  /* 16px minimum: anything smaller makes iOS Safari zoom the page on focus. */
+  font-size: 16px;
+  padding: 0.7rem 0.8rem;
+  color: var(--a-text);
+  background: var(--a-surface-2);
+  border: 1px solid var(--a-border);
+  border-radius: 9px;
+}
+
+.admin-input:focus-visible {
+  outline: 2px solid var(--a-accent);
+  outline-offset: 1px;
+}
+
+.admin-file {
+  width: 100%;
+  font-size: 0.85rem;
+  color: var(--a-muted);
+}
+
+.admin-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.admin-check-inline {
+  margin-top: 0;
+  align-items: center;
+}
+
+.admin-check input {
+  /* Comfortable touch target; the browser default is ~13px. */
+  width: 20px;
+  height: 20px;
+  margin-top: 0.1rem;
+  accent-color: var(--a-accent);
+}
+
+.admin-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.85rem;
+}
+
+/* -------------------------------------------------------------- buttons */
+
+.admin-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px is the smallest reliably tappable target. */
+  min-height: 44px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #121814;
+  background: var(--a-accent);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.admin-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-button-quiet {
+  color: var(--a-text);
+  background: var(--a-surface-2);
+  border-color: var(--a-border);
+}
+
+.admin-button-danger {
+  color: var(--a-danger);
+  background: transparent;
+  border-color: var(--a-danger);
+}
+
+.admin-button:focus-visible,
+.admin-link:focus-visible,
+.admin-tab:focus-visible {
+  outline: 2px solid var(--a-accent);
+  outline-offset: 2px;
+}
+
+/* A styled <label> wrapping a hidden file input. */
+.admin-file-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.admin-link {
+  font-size: 0.82rem;
+  color: var(--a-muted);
+  background: none;
+  border: none;
+  padding: 0.35rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.admin-link:hover {
+  color: var(--a-text);
+}
+
+.admin-inline-link {
+  color: var(--a-accent);
+}
+
+/* -------------------------------------------------------------- feedback */
+
+.admin-error,
+.admin-success {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 9px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.admin-error {
+  color: #ffd9cf;
+  background: rgba(212, 103, 74, 0.16);
+  border: 1px solid rgba(212, 103, 74, 0.45);
+}
+
+.admin-success {
+  color: #dff0d4;
+  background: rgba(127, 176, 105, 0.14);
+  border: 1px solid rgba(127, 176, 105, 0.4);
+}
+
+/* -------------------------------------------------------------- stats */
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 1rem;
+  background: var(--a-surface);
+  border: 1px solid var(--a-border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.admin-stat[data-highlight="true"] {
+  border-color: var(--a-accent);
+}
+
+.admin-stat-value {
+  font-size: 1.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-stat-label {
+  font-size: 0.76rem;
+  color: var(--a-muted);
+}
+
+/* -------------------------------------------------------------- tabs */
+
+.admin-tabs {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-tab {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.83rem;
+  color: var(--a-muted);
+  background: var(--a-surface);
+  border: 1px solid var(--a-border);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.admin-tab[data-selected="true"] {
+  color: #121814;
+  background: var(--a-accent);
+  border-color: var(--a-accent);
+}
+
+/* -------------------------------------------------------------- lists */
+
+.admin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-list-compact {
+  gap: 0.6rem;
+}
+
+.admin-list-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--a-surface-2);
+  border: 1px solid var(--a-border);
+  border-radius: 12px;
+}
+
+.admin-list-item[data-active="true"] {
+  border-color: var(--a-accent);
+}
+
+.admin-list-item-row {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-list-media {
+  flex: 0 0 auto;
+}
+
+.admin-list-body {
+  flex: 1 1 16rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.admin-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--a-muted);
+}
+
+.admin-badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #121814;
+  background: var(--a-accent);
+}
+
+.admin-item-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+}
+
+@media (min-width: 640px) {
+  .admin-item-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  .admin-field-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+/* -------------------------------------------------------------- media */
+
+.admin-video-preview {
+  display: block;
+  width: 100%;
+  max-height: 22rem;
+  margin-bottom: 0.85rem;
+  border-radius: 10px;
+  background: #000;
+}
+
+.admin-thumb {
+  width: 9rem;
+  max-width: 40vw;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  background: #000;
+  object-fit: cover;
+}
+
+.admin-thumb-empty {
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  color: var(--a-muted);
+  background: var(--a-surface);
+  border: 1px dashed var(--a-border);
+}
+
+/* -------------------------------------------------------------- progress */
+
+.admin-progress {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--a-surface-2);
+  border: 1px solid var(--a-border);
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.admin-progress-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgba(200, 164, 92, 0.22);
+  transition: width 180ms linear;
+}
+
+.admin-progress-label {
+  position: relative;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-progress .admin-link {
+  position: relative;
+  margin-left: auto;
+}
+
+/* --- pickup orders --------------------------------------------------------- */
+
+.admin-order-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.admin-order-lines li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.admin-order-line-price {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--a-muted);
+  white-space: nowrap;
+}
+
+.admin-order-total {
+  margin: 0.35rem 0 0;
+  font-size: 1rem;
+}
+
+/* --- gallery ---------------------------------------------------------------- */
+
+.admin-gallery-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+/* Groups the reorder/delete controls away from Save and the publish toggle. */
+.admin-row-gap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .admin-row-gap {
+    margin-left: 0;
+  }
+}
