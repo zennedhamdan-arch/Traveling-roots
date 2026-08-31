@@ -433,7 +433,7 @@ There is **no service-role key** in this application. The dashboard runs under
 the signed-in admin's own session, so there is one authorization path and
 `npm run db:test` covers it.
 
-See [`supabase/README.md`](supabase/README.md) for setup.
+Full setup instructions: [Setting up the admin panel](#setting-up-the-admin-panel).
 
 ### The hero
 
@@ -484,3 +484,127 @@ only `/admin` is unavailable.
 `restaurant.website` in `data/restaurant.ts`. If you serve this on a domain
 other than `https://www.travelingrootsltdrwanda.com/`, update that value so
 canonical URLs and JSON-LD stay correct.
+
+---
+
+## Setting up the admin panel
+
+End to end: a Supabase project, four SQL files, one allow-listed account, two
+environment variables. About ten minutes. After this you can edit the menu,
+change the hero video and manage reservation requests from `/admin` — no code,
+no redeploy.
+
+### What the panel manages
+
+| Dashboard tab | What you can do |
+| --- | --- |
+| **Overview** | Counts at a glance: menu items, categories, new/all reservation requests |
+| **Menu** | Edit any item's name, price (RWF), description and variants; publish or hide items and whole categories |
+| **Hero** | Upload a video that replaces the 29-frame scroll sequence; deactivate it to go back to the frames |
+| **Reservations** | Read every reservation request; filter by status and move them through `new → contacted → confirmed / declined / archived` |
+
+Everything the database stores is also editable directly in Supabase's table
+editor (business info, experiences, offers, testimonials, social links,
+gallery) — those just don't have dedicated dashboard UI yet.
+
+**Pickup orders are not part of this layer.** The panel manages *reservation
+requests*; online ordering would be a separate feature to add.
+
+### 1. Create the Supabase project
+
+Go to [database.new](https://database.new) → **New project**. Pick the region
+closest to Rwanda (`eu-central-1` is currently the nearest low-latency
+option). Save the database password somewhere safe — you will not need it for
+this setup, but you will for disaster recovery.
+
+### 2. Run the SQL
+
+In the Supabase dashboard open **SQL Editor → New query**, paste the entire
+contents of each file below, press **Run**, and repeat — **in this order**:
+
+| Order | File | What it does |
+| --- | --- | --- |
+| 1 | `supabase/migrations/0001_schema.sql` | Tables, constraints, triggers |
+| 2 | `supabase/migrations/0002_rls.sql` | Row Level Security — who may read/write what |
+| 3 | `supabase/migrations/0003_storage.sql` | The `hero-videos` storage bucket and its policies |
+| 4 | `supabase/seed.sql` | The real menu, business info and social links |
+
+`seed.sql` is idempotent — running it twice does not duplicate anything.
+
+### 3. Create your owner account
+
+**Authentication → Users → Add user.** Use a real email address you control
+and a strong password, and tick **Auto Confirm User**.
+
+Then allow-list that account — **this is the step that actually grants
+access.** Creating the auth user alone changes nothing; a signed-in stranger
+is still a stranger:
+
+```sql
+insert into public.admin_users (id, email, role)
+select id, email, 'owner' from auth.users where email = 'you@example.com';
+```
+
+Run that in the SQL Editor, with your exact email. Roles are `'owner'` or
+`'editor'`. To add a second admin later, create their auth user the same way
+and insert a second row.
+
+Finally, **turn off public sign-ups**: **Authentication → Providers → Email →
+disable "Enable sign ups"**. The allow-list already blocks strangers from
+changing anything — this just stops them creating accounts at all.
+
+### 4. Point the site at the project
+
+In Supabase: **Settings → API**. Copy **Project URL** and the **anon public**
+key.
+
+**Locally:** copy `.env.example` to `.env.local`, fill in both values, restart
+the dev server.
+
+**On Vercel:** **Project → Settings → Environment Variables**, add both
+(Production and Preview), then **redeploy** — a running deployment does not
+pick up new variables. Both values are safe to expose: the anon key is
+protected by RLS, and there is deliberately no service-role key in this app.
+
+Until this step is done, the site works normally from the committed content
+in `data/` and `/admin` shows a "not connected" page. After it is done, the
+homepage reads the database (revalidating every 60 seconds) and `/admin`
+becomes a login screen.
+
+### 5. Sign in and use it
+
+Visit **`/admin`** → you land on the login page → sign in with the owner
+email and password → the dashboard.
+
+Day-to-day notes:
+
+- **Edits appear on the public site within about a minute** (the homepage
+  revalidates every 60 s), not instantly. Wait, then hard-refresh.
+- Hiding a category hides every item in it; hidden rows show "(hidden)" in
+  the editor.
+- The hero upload switches the site to the video; **deactivate** it in the
+  Hero tab to return to the frame sequence. Nothing is deleted either way.
+- Sign out from the dashboard sidebar.
+
+### 6. Verify the security model (optional, recommended)
+
+```bash
+npm run db:test
+```
+
+39 checks against an in-process Postgres using these exact migration files:
+an anonymous visitor cannot read the reservation list, cannot self-approve a
+booking and cannot see unpublished content; a signed-up non-admin can change
+nothing. Run it after any change to the SQL.
+
+### Troubleshooting
+
+| Symptom | Cause and fix |
+| --- | --- |
+| `/admin` says "not connected" | Env vars missing/typo'd, or Vercel was not redeployed after adding them |
+| Login works, then bounces back or "not authorized" | The account is not allow-listed, or the email in `admin_users` doesn't match exactly (case-sensitive) — run the step 3 insert |
+| Menu edit not visible on the site | Wait out the 60-second revalidate and hard-refresh; confirm the item and its category are published |
+| Site fine but showing old committed data | Supabase unreachable or the project paused — the fallback to `data/` is by design |
+| Video upload fails | Large files use resumable upload; check the file is a real video format and retry — a failed upload never breaks the current hero |
+
+More detail on the authorization model: [`supabase/README.md`](supabase/README.md).
