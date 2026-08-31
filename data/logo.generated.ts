@@ -9,4 +9,9 @@ export type DetectedLogo = {
   mask: "circle" | "none";
 };
 
-export const detectedLogo: DetectedLogo | null = null;
+export const detectedLogo: DetectedLogo | null = {
+  src: "/images/logo.png",
+  width: 560,
+  height: 554,
+  mask: "none",
+};

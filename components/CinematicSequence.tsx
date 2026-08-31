@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import {
+  FRAME_BACKGROUND,
   FRAME_DIMENSIONS,
   FRAME_FIT,
   INITIAL_ORIENTATION,
@@ -19,7 +20,7 @@ import {
 } from "@/lib/sequence";
 import { SequenceLoader, type SequenceProgress } from "@/lib/sequenceLoader";
 import { useIsomorphicLayoutEffect, useMotionMode } from "@/lib/useMediaQuery";
-import { SECTION_IDS, cinematicCaptions, hero } from "@/data/site";
+import { SECTION_IDS, cinematicCaptions, hero, sequenceMedia } from "@/data/site";
 import { restaurant } from "@/data/restaurant";
 import BrandMark from "./BrandMark";
 import styles from "./CinematicSequence.module.css";
@@ -403,6 +404,9 @@ export default function CinematicSequence(): React.JSX.Element {
       className={styles.section}
       data-reduced={isReduced ? "true" : "false"}
       data-orientation={orientation}
+      /* The stage blends into the frames' own backdrop, so "contain"
+         letterboxing is invisible. Sampled from the frames at build time. */
+      style={{ "--frame-bg": FRAME_BACKGROUND } as React.CSSProperties}
       aria-labelledby="cinematic-heading"
     >
       <div ref={stageRef} className={styles.stage}>
@@ -412,7 +416,7 @@ export default function CinematicSequence(): React.JSX.Element {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={frameSrc(LAST_FRAME_INDEX)}
-            alt="The finished dish at Traveling Roots."
+            alt={sequenceMedia.stillAlt}
             className={styles.still}
             width={FRAME_DIMENSIONS.width}
             height={FRAME_DIMENSIONS.height}
@@ -423,7 +427,7 @@ export default function CinematicSequence(): React.JSX.Element {
             ref={canvasRef}
             className={styles.canvas}
             role="img"
-            aria-label="A Traveling Roots dish, photographed frame by frame. The sequence advances as you scroll."
+            aria-label={sequenceMedia.canvasLabel}
           />
         )}
 

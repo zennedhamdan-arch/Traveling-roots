@@ -69,12 +69,26 @@ async function main() {
       continue;
     }
 
-    // Flatten onto black so transparent padding doesn't skew the statistics.
-    const stats = await sharp(file)
+    // Measured from an explicit raw buffer: sharp's `.stats()` runs on the
+    // input image and ignores pipeline operations such as `.flatten()`.
+    const thumb = await sharp(file)
+      .resize(48, 48, { fit: "fill" })
       .flatten({ background: { r: 0, g: 0, b: 0 } })
-      .stats();
-    const [r, g, b] = stats.channels;
-    const luma = 0.2126 * r.mean + 0.7152 * g.mean + 0.0722 * b.mean;
+      .raw()
+      .toBuffer();
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    const pixels = thumb.length / 3;
+    for (let i = 0; i < thumb.length; i += 3) {
+      r += thumb[i];
+      g += thumb[i + 1];
+      b += thumb[i + 2];
+    }
+    r /= pixels;
+    g /= pixels;
+    b /= pixels;
+    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
     frames.push({
       name,
@@ -83,7 +97,7 @@ async function main() {
       h: meta.height,
       ratio: meta.width / meta.height,
       kb: info.size / 1024,
-      rgb: [r.mean, g.mean, b.mean],
+      rgb: [r, g, b],
       luma,
     });
 

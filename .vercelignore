@@ -1,0 +1,7 @@
+# Source material for the frame sequence. `npm run frames:ingest` turns these
+# into public/sequence/*.webp, which IS deployed. Shipping the raw JPEGs too
+# would upload several MB that no request ever reaches.
+raw-frames/
+
+# Repo docs, not part of the running site.
+docs/

@@ -43,6 +43,14 @@ const EXTS = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif", ".bmp", ".tiff"
 const DARK_LUMA = 12;
 /** Mean per-channel colour distance that indicates a cut rather than motion. */
 const CUT_DELTA = 26;
+/**
+ * Below this mean pixel difference two consecutive frames are the same shot.
+ * Extractors routinely emit duplicates when the source clip holds; scrubbing
+ * onto a run of identical frames feels like the scroll has jammed.
+ */
+const DUPLICATE_DELTA = 1.5;
+/** Thumbnail edge used for duplicate fingerprints — cheap and sufficient. */
+const FINGERPRINT = 48;
 
 function parseArgs(argv) {
   const [, , source, ...rest] = argv;
@@ -87,15 +95,45 @@ function frameNumber(name) {
 const colourDistance = (a, b) =>
   (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2])) / 3;
 
+/**
+ * NOTE: sharp's `.stats()` is computed on the INPUT image and ignores earlier
+ * pipeline operations, so `.extract(...).stats()` silently returns whole-image
+ * numbers. Everything here is measured from an explicit raw pixel buffer.
+ */
 async function describe(file) {
-  const stats = await sharp(file)
+  const thumb = await sharp(file)
+    .resize(FINGERPRINT, FINGERPRINT, { fit: "fill" })
     .flatten({ background: { r: 0, g: 0, b: 0 } })
-    .stats();
-  const [r, g, b] = stats.channels;
-  return {
-    rgb: [r.mean, g.mean, b.mean],
-    luma: 0.2126 * r.mean + 0.7152 * g.mean + 0.0722 * b.mean,
-  };
+    .raw()
+    .toBuffer();
+
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  const pixels = thumb.length / 3;
+  for (let i = 0; i < thumb.length; i += 3) {
+    r += thumb[i];
+    g += thumb[i + 1];
+    b += thumb[i + 2];
+  }
+  r /= pixels;
+  g /= pixels;
+  b /= pixels;
+
+  // Greyscale fingerprint for duplicate detection.
+  const fingerprint = Buffer.allocUnsafe(pixels);
+  for (let i = 0, p = 0; i < thumb.length; i += 3, p += 1) {
+    fingerprint[p] = (thumb[i] * 0.2126 + thumb[i + 1] * 0.7152 + thumb[i + 2] * 0.0722) | 0;
+  }
+
+  return { rgb: [r, g, b], luma: 0.2126 * r + 0.7152 * g + 0.0722 * b, fingerprint };
+}
+
+/** Mean absolute pixel difference between two equally sized buffers. */
+function pixelDistance(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i += 1) sum += Math.abs(a[i] - b[i]);
+  return sum / a.length;
 }
 
 /**
@@ -188,6 +226,7 @@ async function main() {
     const stats = await describe(path.join(srcDir, entry.file));
     entry.rgb = stats.rgb;
     entry.luma = stats.luma;
+    entry.fingerprint = stats.fingerprint;
   }
 
   const black = numbered.filter((e) => e.luma < DARK_LUMA);
@@ -199,19 +238,36 @@ async function main() {
     console.log("  (a fade-through-black is invisible in a video and a dead frame when scrubbed)");
   }
 
+  // Drop consecutive duplicates. A held frame is invisible at 30fps but stalls
+  // the scrub, because several scroll positions map to the same picture.
+  const unique = [];
+  const duplicates = [];
+  for (const entry of lit) {
+    const previous = unique[unique.length - 1];
+    if (previous && pixelDistance(previous.fingerprint, entry.fingerprint) < DUPLICATE_DELTA) {
+      duplicates.push(`${entry.n} (same as ${previous.n})`);
+      continue;
+    }
+    unique.push(entry);
+  }
+  if (duplicates.length > 0) {
+    console.log(`\nDropped ${duplicates.length} duplicate frame(s): ${duplicates.join(", ")}`);
+    console.log("  (identical frames make the scroll feel like it has jammed)");
+  }
+
   /* ---------------- segment into scenes ---------------- */
 
   const scenes = [];
   let current = [];
-  for (let i = 0; i < lit.length; i += 1) {
+  for (let i = 0; i < unique.length; i += 1) {
     if (i > 0) {
-      const delta = colourDistance(lit[i - 1].rgb, lit[i].rgb);
+      const delta = colourDistance(unique[i - 1].rgb, unique[i].rgb);
       if (delta > CUT_DELTA) {
         scenes.push(current);
         current = [];
       }
     }
-    current.push(lit[i]);
+    current.push(unique[i]);
   }
   if (current.length > 0) scenes.push(current);
 
@@ -220,7 +276,7 @@ async function main() {
     const [r, g, b] = scene[0].rgb;
     console.log(
       `  Scene ${i + 1}: ${String(scene.length).padStart(2)} frames  ` +
-        `[${scene[0].file.slice(0, 46)}…]  ` +
+        `(source ${scene[0].n}\u2013${scene[scene.length - 1].n})  ` +
         `avg colour rgb(${r.toFixed(0)}, ${g.toFixed(0)}, ${b.toFixed(0)})`,
     );
   });
@@ -231,7 +287,7 @@ async function main() {
   let label;
 
   if (opts.scene === "all") {
-    chosen = lit;
+    chosen = unique;
     label = "all scenes (montage — expect hard cuts while scrubbing)";
   } else if (opts.scene === "auto") {
     let best = 0;

@@ -56,6 +56,23 @@ export const hero = {
 } as const;
 
 /**
+ * Accessible descriptions of the cinematic sequence.
+ *
+ * These describe what is ACTUALLY on screen. The current frames are
+ * placeholder stock imagery, not Traveling Roots' own dishes, so the copy must
+ * not claim otherwise — a screen-reader user would be told something untrue.
+ * Update both strings when the real food sequence is shot.
+ */
+export const sequenceMedia = {
+  /** Read out in place of the scroll-driven canvas. */
+  canvasLabel:
+    "An open sandwich separated into its layers — seeded bread, ham, cheese and salad — suspended against a dark background. The layers move as you scroll.",
+  /** Alt text for the single still shown under reduced motion. */
+  stillAlt:
+    "An open sandwich separated into its layers — seeded bread, ham, cheese and salad — suspended against a dark background.",
+} as const;
+
+/**
  * Captions driven by cinematic scroll progress.
  * `from`/`to` are normalised progress values (0 → 1) and must stay ordered
  * and non-overlapping. Mirrors the agreed storyboard:

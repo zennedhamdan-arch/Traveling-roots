@@ -36,23 +36,35 @@ npm run dev      # http://localhost:3000
 
 ---
 
-## ⚠️ One thing still needs your real asset
+## Asset status
 
-The menu and Instagram are in. Only the frames and the logo file remain.
+| Asset | Status |
+| --- | --- |
+| Menu | ✅ Real, transcribed from the official Canva menu |
+| Instagram | ✅ `traveling_roots_rwanda` |
+| Logo | ✅ `public/images/logo.png` (560×554, transparent PNG) |
+| Frame sequence | ⚠️ **Placeholder stock imagery** — see below |
 
 ### 1. The 29 frames — `public/sequence/`
 
-The real sequence has **not** been supplied yet. The repo currently ships
-**temporary placeholder frames**: an abstract geometric composition that
-assembles from frame 01 → 29, with a tick scale so you can see which frame is
-on screen. They exist purely so the scroll mechanic could be built and tuned.
-They deliberately invent nothing about the real animation.
+Built from `raw-frames/` (27 source JPEGs) with:
 
-> **The frames currently in the repo are placeholders.** The reference clip
-> supplied so far is Pinterest-sourced stock food (sandwiches and tacos) that
-> Traveling Roots does not serve, cut together from three unrelated scenes.
-> See **[docs/frame-shoot-guide.md](docs/frame-shoot-guide.md)** for a
-> hand-to-the-camera spec for shooting the real sequence.
+```bash
+npm run frames:ingest -- raw-frames --scene 1 --trim 0 --width 720 --quality 82
+```
+
+The source is a montage of **three unrelated scenes** — a layered sandwich on
+black, tacos on red, a baguette on orange — plus a cross-dissolve frame and a
+duplicate. Only **scene 1 (the sandwich on black)** is used, because a scrubbed
+sequence has to read as one continuous shot, and because its black backdrop
+merges into the dark stage instead of sitting in the page as a coloured
+rectangle. Eight unique source frames are interpolated up to 29.
+
+> ⚠️ **These are placeholders.** The imagery is Pinterest-sourced stock food
+> that Traveling Roots does not serve, so it is not a licensable or honest
+> final hero. See **[docs/frame-shoot-guide.md](docs/frame-shoot-guide.md)**
+> for a hand-to-the-camera spec for shooting the real sequence — it is two
+> commands to swap in.
 
 **To install the real frames**, use the ingest script — it handles the messy
 filenames a frame extractor produces:
@@ -119,6 +131,14 @@ Once the real frames are in, delete `scripts/generate-placeholder-frames.mjs`.
 cwebp -q 80 -m 6 -resize 1080 0 frame-01.png -o frame-01.webp
 ```
 
+#### The stage matches the frames
+
+`measure-frames` also samples the average colour of the frame **corners** and
+writes it to `data/frames.generated.ts`. The stage behind the canvas is painted
+that colour, so the letterboxing that `contain` produces is invisible and the
+food appears to float in the page rather than inside a rectangle. Swap in
+frames shot on white and the stage follows.
+
 #### The layout follows the frames
 
 `scripts/measure-frames.mjs` runs on every `dev` / `build`, reads
@@ -134,16 +154,17 @@ and the copy takes the left column, as an editorial split. Mobile stays
 centred and near-full-bleed. Swap in landscape frames and the centred
 composition returns on its own — no code change.
 
-### 2. The logo — `public/images/logo.png`
+### 2. The logo — `public/images/logo.png` ✅ installed
 
-The official logo is **not** recreated or approximated anywhere in this repo.
-Until the file is present, every brand lock-up falls back to a clean
-typographic wordmark.
+The official logo is **not** recreated or approximated anywhere in this repo —
+the supplied PNG is used as-is. Because it already carries its own
+transparency, `detect-logo` correctly applies **no** circular mask, so nothing
+is cropped.
 
-Installing it is a pure drop-in — no code change:
+Replacing it is a pure drop-in — no code change:
 
 ```bash
-cp your-logo.png public/images/logo.png
+cp new-logo.png public/images/logo.png
 npm run build          # or npm run dev
 ```
 
@@ -360,3 +381,34 @@ Then:
 Next.js 15 (App Router) · React 19 · TypeScript (strict) · GSAP 3 +
 ScrollTrigger · HTML Canvas · CSS Modules. No UI framework, no CSS framework,
 no 3D engine.
+
+---
+
+## Deploying to Vercel
+
+No configuration is needed beyond the defaults — but a few things are worth
+knowing.
+
+**Build command** is the default `npm run build`. `prebuild` runs
+`detect-logo` and `measure-frames` first, both of which need `sharp`. Vercel
+installs `devDependencies` during the build, so this works out of the box. If
+either script ever fails, the build still succeeds: `data/logo.generated.ts`
+and `data/frames.generated.ts` are committed, so the last known-good values are
+used.
+
+**Node** is pinned via `engines.node` (`>=20.9.0`).
+
+**Caching.** Vercel serves `public/` with `cache-control: public, max-age=0,
+must-revalidate` by default, which would re-validate all 29 frames on every
+visit. `next.config.ts` overrides `/sequence/:path*` with
+`max-age=31536000, immutable`. If you replace the frames, the filenames stay
+the same, so **purge the deployment cache** (or redeploy) to avoid serving the
+old sequence for a year.
+
+**`.vercelignore`** keeps `raw-frames/` and `docs/` out of the upload — the
+raw JPEGs are build input, not served assets.
+
+**Domain.** `metadataBase` and the structured data both read from
+`restaurant.website` in `data/restaurant.ts`. If you serve this on a domain
+other than `https://www.travelingrootsltdrwanda.com/`, update that value so
+canonical URLs and JSON-LD stay correct.

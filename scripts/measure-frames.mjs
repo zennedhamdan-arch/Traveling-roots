@@ -23,9 +23,58 @@ export type FrameDimensions = Readonly<{ width: number; height: number }>;
 
 `;
 
+/**
+ * Average colour of the four frame corners.
+ *
+ * The stage behind the canvas is painted this colour so a "contain" frame
+ * blends into the page instead of reading as a hard-edged rectangle sitting
+ * on a different background.
+ *
+ * Measured from an explicit raw buffer: sharp's `.stats()` is computed on the
+ * input image and ignores `.extract()`, which would silently return the
+ * whole-image mean instead of the corner.
+ */
+async function cornerColour(file, width, height) {
+  const patch = Math.max(8, Math.round(Math.min(width, height) * 0.05));
+  const corners = [
+    { left: 0, top: 0 },
+    { left: width - patch, top: 0 },
+    { left: 0, top: height - patch },
+    { left: width - patch, top: height - patch },
+  ];
+
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  for (const corner of corners) {
+    const buffer = await sharp(file)
+      .extract({ ...corner, width: patch, height: patch })
+      .flatten({ background: { r: 0, g: 0, b: 0 } })
+      .raw()
+      .toBuffer();
+    let cr = 0;
+    let cg = 0;
+    let cb = 0;
+    for (let i = 0; i < buffer.length; i += 3) {
+      cr += buffer[i];
+      cg += buffer[i + 1];
+      cb += buffer[i + 2];
+    }
+    const pixels = buffer.length / 3;
+    r += cr / pixels;
+    g += cg / pixels;
+    b += cb / pixels;
+  }
+
+  const hex = (value) => Math.round(value / 4).toString(16).padStart(2, "0");
+  return `#${hex(r)}${hex(g)}${hex(b)}`;
+}
+
 async function main() {
   let width = 1600;
   let height = 1000;
+  let background = "#0e1a13";
   let found = false;
 
   try {
@@ -34,6 +83,7 @@ async function main() {
     if (meta.width && meta.height) {
       width = meta.width;
       height = meta.height;
+      background = await cornerColour(FIRST_FRAME, width, height);
       found = true;
     }
   } catch {
@@ -46,13 +96,16 @@ async function main() {
   const body =
     `export const frameDimensions: FrameDimensions = { width: ${width}, height: ${height} };\n` +
     `\n/** ${width}\u00d7${height} \u2192 ${ratio.toFixed(3)}:1 (${orientation}). */\n` +
-    `export const frameAspectRatio = ${ratio.toFixed(6)};\n`;
+    `export const frameAspectRatio = ${ratio.toFixed(6)};\n` +
+    `\n/**\n * Average colour of the frame corners. The stage is painted this so a\n` +
+    ` * "contain" frame blends into the page instead of showing a hard edge.\n */\n` +
+    `export const frameBackground = "${background}";\n`;
 
   await writeFile(OUT, header + body, "utf8");
 
   console.log(
     found
-      ? `Frames measured: ${width}\u00d7${height} (${orientation}).`
+      ? `Frames measured: ${width}\u00d7${height} (${orientation}), backdrop ${background}.`
       : `No frames found — data/frames.generated.ts written with the ${width}\u00d7${height} default.`,
   );
 }

@@ -7,3 +7,9 @@ export const frameDimensions: FrameDimensions = { width: 720, height: 1280 };
 
 /** 720×1280 → 0.563:1 (portrait). */
 export const frameAspectRatio = 0.562500;
+
+/**
+ * Average colour of the frame corners. The stage is painted this so a
+ * "contain" frame blends into the page instead of showing a hard edge.
+ */
+export const frameBackground = "#060508";

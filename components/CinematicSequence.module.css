@@ -20,13 +20,16 @@
   /* svh avoids the mobile URL-bar jump that makes pinned sections judder. */
   height: 100svh;
   overflow: hidden;
+  /* --frame-bg is the frames' own corner colour, sampled at build time, so
+     the "contain" letterboxing around the frame is invisible. The green glow
+     sits on top of it to keep the stage on-brand rather than a flat void. */
   background:
     radial-gradient(
       120% 90% at 50% 18%,
-      rgba(62, 91, 69, 0.34) 0%,
+      rgba(62, 91, 69, 0.28) 0%,
       rgba(14, 26, 19, 0) 62%
     ),
-    var(--tr-ink);
+    var(--frame-bg, var(--tr-ink));
 }
 
 .canvas {
@@ -373,7 +376,7 @@
   .section[data-orientation="portrait"][data-reduced="false"] .hero {
     right: auto;
     left: 0;
-    width: min(46%, 33rem);
+    width: min(42%, 30rem);
     margin-left: var(--space-gutter);
     padding: 0;
     align-items: flex-start;
@@ -392,7 +395,7 @@
     bottom: auto;
     top: 50%;
     transform: translateY(-50%);
-    width: min(46%, 33rem);
+    width: min(42%, 30rem);
     margin-left: var(--space-gutter);
     padding: 0;
     place-items: center start;

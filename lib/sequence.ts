@@ -4,7 +4,7 @@
  * All tuning lives here — no magic numbers scattered through the component.
  */
 
-import { frameDimensions } from "@/data/frames.generated";
+import { frameBackground, frameDimensions } from "@/data/frames.generated";
 
 /** EXACTLY 29 frames. Do not change unless the source sequence changes. */
 export const FRAME_COUNT = 29;
@@ -131,3 +131,13 @@ export const INITIAL_ORIENTATION: Orientation = orientationOf(
   frameDimensions.width,
   frameDimensions.height,
 );
+
+/**
+ * The frames' own backdrop colour, sampled from their corners at build time.
+ *
+ * "contain" letterboxes the frame, so the stage around it must match or the
+ * frame reads as a rectangle pasted onto a different background. Painting the
+ * stage this colour makes the letterboxing invisible and the food appear to
+ * float in the page.
+ */
+export const FRAME_BACKGROUND = frameBackground;
