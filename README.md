@@ -33,6 +33,8 @@ npm run dev      # http://localhost:3000
 | `npm run frames:ingest <dir>` | Converts raw extracted frames into `frame-01…29.webp` |
 | `npm run frames:measure` | Re-reads the frames' real dimensions            |
 | `npm run logo:detect` | Re-scans `public/images/` for the logo              |
+| `npm run seed:generate` | Rebuilds `supabase/seed.sql` from `data/`         |
+| `npm run db:test`     | Applies the migrations to a real Postgres and tests RLS |
 
 ---
 
@@ -384,6 +386,71 @@ no 3D engine.
 
 ---
 
+## Architecture
+
+The site runs in two modes, and both are fully supported:
+
+```
+                    NEXT_PUBLIC_SUPABASE_URL set?
+                        /                    \
+                      no                     yes
+                       |                       |
+            content from data/*.ts    content from Supabase
+            /admin -> "not connected"  /admin -> dashboard
+```
+
+**The fallback is the point, not a safety net.** The restaurant's menu, phone
+number, hours and address are already correct and committed in `data/`. A
+missing environment variable, a paused Supabase project or a network blip must
+never take that off the internet. Every loader in `lib/content.ts` falls back
+per-field, so the worst case is that a recent edit is not shown yet — never a
+blank menu.
+
+### Rendering
+
+The homepage stays **statically rendered** with a 60-second revalidate. Public
+content is read through a cookie-less client (`lib/supabase/public.ts`), so
+looking up the menu does not depend on who is asking and does not opt the page
+out of the CDN. Only `/admin` is dynamic.
+
+That is why adding a database cost the public bundle about 1 kB: Supabase only
+ships in the admin chunks.
+
+### Authorization
+
+| Who | May do |
+| --- | --- |
+| Anyone | Read published content; create a reservation request |
+| A signed-up user who is **not** allow-listed | Nothing more than the above |
+| A row in `admin_users` | Everything |
+
+Being authenticated is not authorization. Supabase Auth will happily
+authenticate any account, so permission is a row in `admin_users`, checked by
+`is_admin()` inside every write policy and enforced by Postgres rather than by
+the UI.
+
+There is **no service-role key** in this application. The dashboard runs under
+the signed-in admin's own session, so there is one authorization path and
+`npm run db:test` covers it.
+
+See [`supabase/README.md`](supabase/README.md) for setup.
+
+### The hero
+
+The 29-frame sequence has **not** been deleted. It is the fallback:
+
+```
+active hero_media row with a video  ->  <HeroVideo>
+otherwise                           ->  CinematicSequence
+```
+
+So uploading a video is reversible from the dashboard, a failed upload leaves
+a working hero rather than a black rectangle, and the site still works with no
+Supabase at all. Uploads over 6 MB use Supabase's resumable protocol, because
+one dropped packet at 95% of an 80 MB file should not restart the upload.
+
+---
+
 ## Deploying to Vercel
 
 No configuration is needed beyond the defaults — but a few things are worth
@@ -407,6 +474,11 @@ old sequence for a year.
 
 **`.vercelignore`** keeps `raw-frames/` and `docs/` out of the upload — the
 raw JPEGs are build input, not served assets.
+
+**Environment variables.** `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` (see `.env.example`). Both are safe to expose —
+the anon key is protected by RLS. Without them the site still deploys and runs;
+only `/admin` is unavailable.
 
 **Domain.** `metadataBase` and the structured data both read from
 `restaurant.website` in `data/restaurant.ts`. If you serve this on a domain

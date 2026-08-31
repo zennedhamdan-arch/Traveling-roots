@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
-import { dietaryLegend, menu } from "@/data/menu";
+import { dietaryLegend, menu as staticMenu, type MenuCategoryData } from "@/data/menu";
 import { SECTION_IDS } from "@/data/site";
 import { restaurant } from "@/data/restaurant";
 import MenuCategory from "./MenuCategory";
@@ -14,8 +14,18 @@ import styles from "./Menu.module.css";
  * One category is shown at a time via a proper ARIA tablist: arrow keys move
  * between tabs, Home/End jump to the ends, and the panel is labelled by its
  * tab. On mobile the tablist becomes a horizontally scrollable strip.
+ *
+ * Categories are passed in by the server so the menu can come from Supabase.
+ * The default keeps the committed menu working when the database is absent —
+ * this component never decides where the data comes from.
  */
-export default function Menu(): React.JSX.Element {
+type MenuProps = Readonly<{ categories?: readonly MenuCategoryData[] }>;
+
+export default function Menu({
+  categories = staticMenu,
+}: MenuProps = {}): React.JSX.Element {
+  const menu = categories;
+
   const [activeId, setActiveId] = useState<string>(menu[0]?.id ?? "");
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const baseId = useId();
@@ -55,7 +65,7 @@ export default function Menu(): React.JSX.Element {
       setActiveId(target.id);
       document.getElementById(tabId(target.id))?.focus();
     },
-    [activeId, tabId],
+    [activeId, menu, tabId],
   );
 
   return (

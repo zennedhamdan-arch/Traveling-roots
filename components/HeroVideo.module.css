@@ -1,0 +1,174 @@
+/* --------------------------------------------------------------------------
+   Cinematic hero video
+
+   Same visual language as the frame sequence it replaces: full-bleed motion,
+   a scrim to protect the type, and the lock-up centred over it.
+   -------------------------------------------------------------------------- */
+
+.stage {
+  position: relative;
+  width: 100%;
+  /* svh, not vh: on mobile the URL bar collapse changes vh mid-scroll and
+     leaves a strip of background under a 100vh hero. */
+  height: 100svh;
+  min-height: 32rem;
+  overflow: hidden;
+  background: var(--tr-ink);
+  isolation: isolate;
+}
+
+.video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* "cover" is right here and wrong for the frame sequence: a hero video is a
+     backdrop, so filling the viewport matters more than showing every edge.
+     The subject is expected to be centre-weighted. */
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+}
+
+/* Protects the headline's contrast over unpredictable footage. Without it the
+   copy is legible over a dark shot and invisible over a bright one. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(8, 16, 11, 0.55) 0%,
+      rgba(8, 16, 11, 0.28) 38%,
+      rgba(8, 16, 11, 0.62) 100%
+    ),
+    radial-gradient(120% 90% at 50% 30%, rgba(8, 16, 11, 0) 40%, rgba(8, 16, 11, 0.5) 100%);
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.9rem, 2.4vw, 1.4rem);
+  padding: 0 var(--space-gutter);
+  text-align: center;
+}
+
+.brand {
+  color: var(--tr-cream);
+  opacity: 0.94;
+}
+
+.headline {
+  margin: 0;
+  max-width: 18ch;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2rem, 7vw, 4.35rem);
+  line-height: 1.05;
+  letter-spacing: -0.012em;
+  color: var(--tr-cream);
+  text-wrap: balance;
+  text-shadow: 0 2px 34px rgba(6, 14, 9, 0.55);
+}
+
+.supporting {
+  margin: 0;
+  font-size: clamp(0.78rem, 2.5vw, 0.92rem);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--tr-sand);
+  opacity: 0.85;
+}
+
+.scrollCue {
+  margin-top: clamp(1.5rem, 5vh, 3rem);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  text-decoration: none;
+  color: inherit;
+  /* Comfortable target on a phone without drawing a box around it. */
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+}
+
+.scrollCue:focus-visible {
+  outline: 2px solid var(--tr-gold);
+  outline-offset: 3px;
+}
+
+.scrollCueLabel {
+  font-size: 0.62rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--tr-sand);
+  opacity: 0.72;
+}
+
+.scrollCueTrack {
+  position: relative;
+  width: 1px;
+  height: 2.75rem;
+  background: linear-gradient(to bottom, rgba(224, 212, 191, 0.5), rgba(224, 212, 191, 0));
+}
+
+.scrollCueDot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--tr-gold);
+  animation: heroScrollHint 2.4s ease-in-out infinite;
+}
+
+@keyframes heroScrollHint {
+  0% { transform: translateY(0); opacity: 0; }
+  22% { opacity: 1; }
+  78% { opacity: 1; }
+  100% { transform: translateY(2.4rem); opacity: 0; }
+}
+
+.playToggle {
+  position: absolute;
+  right: var(--space-gutter);
+  bottom: clamp(1rem, 3vh, 1.75rem);
+  z-index: 3;
+  min-height: 44px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tr-cream);
+  background: rgba(8, 16, 11, 0.5);
+  border: 1px solid rgba(224, 212, 191, 0.28);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 200ms ease, border-color 200ms ease;
+}
+
+.playToggle:hover {
+  background: rgba(8, 16, 11, 0.72);
+  border-color: rgba(224, 212, 191, 0.5);
+}
+
+.playToggle:focus-visible {
+  outline: 2px solid var(--tr-gold);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrollCueDot {
+    animation: none;
+    opacity: 0.9;
+  }
+}
