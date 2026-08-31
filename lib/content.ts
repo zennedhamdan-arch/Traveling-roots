@@ -168,6 +168,115 @@ export const getMenu = cache(async (): Promise<readonly MenuCategoryData[]> => {
 });
 
 /* -------------------------------------------------------------------------- */
+/* Pickup-order menu                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The menu as the ORDER FORM needs it — which is not what `getMenu()` returns.
+ *
+ * The public menu renders slugged ids and formatted prices ("6,000 RWF")
+ * because that is all display needs. An order line must carry the real
+ * `menu_items.id` and the numeric price so the database can resolve it, so
+ * this loader keeps the raw row values.
+ *
+ * There is deliberately NO static fallback: without a database there is
+ * nowhere to submit an order, so the page falls back to the phone number
+ * instead of rendering a form that can never succeed.
+ */
+export type OrderableVariant = Readonly<{ label: string; price: number | null }>;
+
+export type OrderableItem = Readonly<{
+  id: string;
+  name: string;
+  price: number | null;
+  variants: readonly OrderableVariant[];
+  dietary: readonly string[];
+}>;
+
+export type OrderableSection = Readonly<{
+  title: string | null;
+  items: readonly OrderableItem[];
+}>;
+
+export type OrderableCategory = Readonly<{
+  slug: string;
+  name: string;
+  sections: readonly OrderableSection[];
+}>;
+
+export const getOrderMenu = cache(async (): Promise<readonly OrderableCategory[] | null> => {
+  if (!isSupabaseConfigured) return null;
+
+  try {
+    const supabase = createSupabasePublicClient();
+    if (!supabase) throw new Error("not configured");
+
+    const [categories, sections, items] = await Promise.all([
+      supabase.from("menu_categories").select("*").order("sort_order"),
+      supabase.from("menu_sections").select("*").order("sort_order"),
+      supabase.from("menu_items").select("*").order("sort_order"),
+    ]);
+
+    if (categories.error || sections.error || items.error) throw new Error("menu query failed");
+    if (!categories.data || categories.data.length === 0) return null;
+
+    const sectionsByCategory = new Map<string, MenuSectionRow[]>();
+    for (const section of sections.data ?? []) {
+      const list = sectionsByCategory.get(section.category_id) ?? [];
+      list.push(section);
+      sectionsByCategory.set(section.category_id, list);
+    }
+
+    const itemsBySection = new Map<string, MenuItemRow[]>();
+    for (const item of items.data ?? []) {
+      const list = itemsBySection.get(item.section_id) ?? [];
+      list.push(item);
+      itemsBySection.set(item.section_id, list);
+    }
+
+    /* The read policies already exclude unpublished categories; `available`
+       (the owner's "86 it for tonight" switch) is filtered here, exactly as
+       buildMenu does for the display menu. */
+    const built = categories.data.map((category): OrderableCategory => {
+      const categorySections = (sectionsByCategory.get(category.id) ?? [])
+        .map((section): OrderableSection => {
+          const sectionItems = (itemsBySection.get(section.id) ?? [])
+            .filter((item) => item.available)
+            .map(
+              (item): OrderableItem => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                variants: item.variants.map((variant) => ({
+                  label: variant.label,
+                  price: variant.price,
+                })),
+                dietary: item.dietary,
+              }),
+            );
+
+          return {
+            title: section.title,
+            items: sectionItems,
+          };
+        })
+        .filter((section) => section.items.length > 0);
+
+      return {
+        slug: category.slug,
+        name: category.name,
+        sections: categorySections,
+      };
+    });
+
+    const flat = built.filter((category) => category.sections.length > 0);
+    return flat.length > 0 ? flat : null;
+  } catch {
+    return null;
+  }
+});
+
+/* -------------------------------------------------------------------------- */
 /* Business info                                                              */
 /* -------------------------------------------------------------------------- */
 

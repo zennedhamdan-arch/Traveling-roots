@@ -43,6 +43,7 @@ export type NavLink = Readonly<{ label: string; href: string }>;
 
 export const navLinks: readonly NavLink[] = [
   { label: "Menu", href: `#${SECTION_IDS.menu}` },
+  { label: "Order Pickup", href: "/order" },
   { label: "Our Story", href: `#${SECTION_IDS.story}` },
   { label: "Experiences", href: `#${SECTION_IDS.experiences}` },
   { label: "Contact", href: `#${SECTION_IDS.contact}` },

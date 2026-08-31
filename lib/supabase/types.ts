@@ -175,6 +175,48 @@ export type AdminUserRow = {
   created_at: string;
 };
 
+export type PickupOrderStatus =
+  | "new"
+  | "accepted"
+  | "preparing"
+  | "ready"
+  | "completed"
+  | "cancelled";
+
+/**
+ * A line as STORED on an order: the database resolves every line against the
+ * live menu and snapshots the price, so an order is immune to later menu
+ * edits and to whatever numbers the client sent.
+ */
+export type PickupOrderLine = Readonly<{
+  menu_item_id: string;
+  name: string;
+  variant_label: string | null;
+  unit_price: number;
+  quantity: number;
+}>;
+
+/** A line as SUBMITTED by a guest: no price, the database does not read it. */
+export type PickupOrderDraftLine = Readonly<{
+  menu_item_id: string;
+  quantity: number;
+  variant_label?: string;
+}>;
+
+export type PickupOrderRow = {
+  id: string;
+  customer_name: string;
+  phone: string;
+  note: string | null;
+  pickup_at: string | null;
+  items: PickupOrderLine[];
+  total: number;
+  status: PickupOrderStatus;
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 /** Shape consumed by `createClient<Database>()`. */
 export type Database = {
   public: {
@@ -259,6 +301,15 @@ export type Database = {
         > &
           Partial<Pick<ReservationRequestRow, "email" | "notes">>;
         Update: Partial<ReservationRequestRow>;
+        Relationships: [];
+      };
+      pickup_orders: {
+        Row: PickupOrderRow;
+        Insert: Pick<PickupOrderRow, "customer_name" | "phone"> &
+          Partial<Pick<PickupOrderRow, "note" | "pickup_at">> & {
+            items: readonly PickupOrderDraftLine[];
+          };
+        Update: Partial<PickupOrderRow>;
         Relationships: [];
       };
     };

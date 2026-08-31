@@ -146,7 +146,12 @@ async function main() {
   `);
 
   console.log("Applying migrations…");
-  for (const file of ["0001_schema.sql", "0002_rls.sql", "0003_storage.sql"]) {
+  for (const file of [
+    "0001_schema.sql",
+    "0002_rls.sql",
+    "0003_storage.sql",
+    "0004_pickup_orders.sql",
+  ]) {
     const sql = await read(path.join("supabase", "migrations", file));
     // pgcrypto ships with Supabase; PGlite has gen_random_uuid() in core.
     await db.exec(sql.replace(/create extension if not exists "pgcrypto";/g, ""));
@@ -289,6 +294,148 @@ async function main() {
   );
 
   /* ------------------------------------------------------------------ */
+  console.log("\nPublic visitor — pickup orders");
+  /* ------------------------------------------------------------------ */
+  // The money rule: the database prices the order, the client's numbers are
+  // never read. Every insert below sends lying prices; the assertions check
+  // what the database actually stored.
+
+  const soupId = (
+    await db.query(`select id from public.menu_items where name = 'Soup of the Day'`)
+  ).rows[0].id;
+  const ribsId = (
+    await db.query(`select id from public.menu_items where name = 'Pork Ribs'`)
+  ).rows[0].id;
+
+  await as(db, "anon", null, async () => {
+    await db.query(
+      `insert into public.pickup_orders (customer_name, phone, items)
+       values (
+         'Visitor', '+250790000000',
+         $json$[
+           {"menu_item_id": "${soupId}", "quantity": 2, "unit_price": 1},
+           {"menu_item_id": "${ribsId}", "quantity": 1, "variant_label": "400g", "unit_price": 1}
+         ]$json$::jsonb
+       )`,
+    );
+    check("CAN submit a pickup order", true);
+  });
+
+  {
+    const stored = await db.query(
+      `select items, total from public.pickup_orders order by created_at desc limit 1`,
+    );
+    const lines = stored.rows[0].items;
+    check(
+      "the database priced the order, not the client",
+      stored.rows[0].total === 6000 * 2 + 13500 &&
+        lines.every((l) => l.unit_price !== 1),
+      `total ${stored.rows[0].total}, first line ${JSON.stringify(lines[0])}`,
+    );
+    check(
+      "prices are snapshotted into the order",
+      lines.find((l) => l.variant_label === "400g").unit_price === 13500 &&
+        lines.find((l) => l.name === "Soup of the Day").unit_price === 6000,
+      JSON.stringify(lines),
+    );
+  }
+
+  await denied(db, "CANNOT read pickup orders", () =>
+    as(db, "anon", null, () => db.query("select * from public.pickup_orders")),
+  );
+  await denied(db, "CANNOT set their own total", () =>
+    as(db, "anon", null, () =>
+      db.query(
+        `insert into public.pickup_orders (customer_name, phone, items, total)
+         values ('Sneaky', '+250790000001', $json$[{"menu_item_id": "${soupId}", "quantity": 1}]$json$::jsonb, 100)`,
+      ),
+    ),
+  );
+  await denied(db, "CANNOT accept their own order", () =>
+    as(db, "anon", null, () =>
+      db.query(
+        `insert into public.pickup_orders (customer_name, phone, items, status)
+         values ('Sneaky', '+250790000002', $json$[{"menu_item_id": "${soupId}", "quantity": 1}]$json$::jsonb, 'accepted')`,
+      ),
+    ),
+  );
+  await denied(db, "CANNOT write staff-only admin_notes", () =>
+    as(db, "anon", null, () =>
+      db.query(
+        `insert into public.pickup_orders (customer_name, phone, items, admin_notes)
+         values ('Sneaky', '+250790000003', $json$[{"menu_item_id": "${soupId}", "quantity": 1}]$json$::jsonb, 'x')`,
+      ),
+    ),
+  );
+  await denied(db, "CANNOT order for a pickup time outside the window", () =>
+    as(db, "anon", null, () =>
+      db.query(
+        `insert into public.pickup_orders (customer_name, phone, pickup_at, items)
+         values ('Past', '+250790000004', now() - interval '2 days', $json$[{"menu_item_id": "${soupId}", "quantity": 1}]$json$::jsonb)`,
+      ),
+    ),
+  );
+
+  // Trigger-level validation: blocked by the pricing trigger, which raises a
+  // domain error rather than a permission error — so assert "it threw".
+  const orderFails = async (label, itemsJson) => {
+    try {
+      await as(db, "anon", null, () =>
+        db.query(
+          `insert into public.pickup_orders (customer_name, phone, items)
+           values ('Bad', '+250790000005', $json$${itemsJson}$json$::jsonb)`,
+        ),
+      );
+      check(label, false, "the insert SUCCEEDED but should have been refused");
+    } catch {
+      check(label, true);
+    }
+  };
+
+  await orderFails(
+    "CANNOT order a quantity of zero",
+    `[{"menu_item_id": "${soupId}", "quantity": 0}]`,
+  );
+  await orderFails(
+    "CANNOT order an item that does not exist",
+    `[{"menu_item_id": "99999999-9999-9999-9999-999999999999", "quantity": 1}]`,
+  );
+
+  {
+    // An item in a hidden category is invisible to the public (RLS), so the
+    // trigger — which runs as the caller — cannot resolve it.
+    await db.exec(`update public.menu_categories set published = false where slug = 'desserts';`);
+    const dessertId = (
+      await db.query(`select i.id from public.menu_items i
+        join public.menu_sections s on s.id = i.section_id
+        join public.menu_categories c on c.id = s.category_id
+        where c.slug = 'desserts' limit 1`)
+    ).rows[0].id;
+    await orderFails(
+      "CANNOT order an item the public cannot see",
+      `[{"menu_item_id": "${dessertId}", "quantity": 1}]`,
+    );
+    await db.exec(`update public.menu_categories set published = true where slug = 'desserts';`);
+
+    // Same for an item the kitchen has 86'd for tonight.
+    await db.exec(`update public.menu_items set available = false where name = 'Soup of the Day';`);
+    await orderFails(
+      "CANNOT order an unavailable item",
+      `[{"menu_item_id": "${soupId}", "quantity": 1}]`,
+    );
+    await db.exec(`update public.menu_items set available = true where name = 'Soup of the Day';`);
+  }
+
+  await denied(db, "CANNOT edit an order after submitting it", () =>
+    as(db, "anon", null, () =>
+      db.query("update public.pickup_orders set status = 'cancelled'"),
+    ),
+  );
+  await denied(db, "CANNOT delete an order after submitting it", () =>
+    as(db, "anon", null, () => db.query("delete from public.pickup_orders")),
+  );
+
+  /* ------------------------------------------------------------------ */
   console.log("\nSigned-up user who is NOT an admin");
   /* ------------------------------------------------------------------ */
   // This is the case the Bar Mubiti model got wrong: authentication treated as
@@ -349,7 +496,25 @@ async function main() {
   await as(db, "authenticated", INTRUDER, async () => {
     const rows = await db.query("select count(*) as n from public.reservation_requests");
     check("sees zero reservation requests", Number(rows.rows[0].n) === 0, `saw ${rows.rows[0].n}`);
+
+    const orders = await db.query("select count(*) as n from public.pickup_orders");
+    check("sees zero pickup orders", Number(orders.rows[0].n) === 0, `saw ${orders.rows[0].n}`);
   });
+
+  await changesNothing(
+    db,
+    "CANNOT move an order along",
+    () =>
+      as(db, "authenticated", INTRUDER, () =>
+        db.query("update public.pickup_orders set status = 'completed'"),
+      ),
+    async () => {
+      const r = await db.query(
+        "select count(*) as n from public.pickup_orders where status = 'completed'",
+      );
+      return Number(r.rows[0].n) === 0;
+    },
+  );
 
   await denied(db, "CANNOT promote themselves to admin", () =>
     as(db, "authenticated", INTRUDER, () =>
@@ -381,6 +546,14 @@ async function main() {
       "update public.reservation_requests set status = 'confirmed', admin_notes = 'called'",
     );
     check("can confirm a reservation", true);
+
+    const orders = await db.query("select count(*) as n from public.pickup_orders");
+    check("can read pickup orders", Number(orders.rows[0].n) === 1);
+
+    await db.query(
+      "update public.pickup_orders set status = 'accepted', admin_notes = 'confirmed by phone'",
+    );
+    check("can accept a pickup order", true);
 
     await db.query(`insert into storage.objects (bucket_id, name) values ('hero', 'v.mp4')`);
     check("can upload to storage", true);
@@ -455,6 +628,22 @@ async function main() {
     rlsOff.rows.length === 0,
     rlsOff.rows.map((r) => r.relname).join(", "),
   );
+
+  {
+    // The stored total must equal the sum of the snapshotted lines — the
+    // invariant that makes the client's numbers irrelevant.
+    const stored = await db.query(
+      `select total,
+              coalesce(sum((line->>'unit_price')::int * (line->>'quantity')::int), 0) as lines_total
+       from public.pickup_orders, jsonb_array_elements(items) as line
+       group by total`,
+    );
+    check(
+      "every order total matches its snapshotted lines",
+      stored.rows.every((r) => r.total === r.lines_total),
+      JSON.stringify(stored.rows),
+    );
+  }
 
   /* ------------------------------------------------------------------ */
   console.log(`\n${passed} passed, ${failed} failed`);

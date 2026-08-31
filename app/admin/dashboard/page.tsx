@@ -13,21 +13,38 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export default async function OverviewPage(): Promise<React.JSX.Element> {
   const supabase = await createSupabaseServerClient();
 
-  const [items, categories, reservations, pending, hero, experiences] = await Promise.all([
-    supabase.from("menu_items").select("*", { count: "exact", head: true }),
-    supabase.from("menu_categories").select("*", { count: "exact", head: true }),
-    supabase.from("reservation_requests").select("*", { count: "exact", head: true }),
-    supabase
-      .from("reservation_requests")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "new"),
-    supabase.from("hero_media").select("video_url").eq("is_active", true).maybeSingle(),
-    supabase.from("experiences").select("*", { count: "exact", head: true }),
-  ]);
+  const [items, categories, reservations, pending, hero, experiences, orders, newOrders] =
+    await Promise.all([
+      supabase.from("menu_items").select("*", { count: "exact", head: true }),
+      supabase.from("menu_categories").select("*", { count: "exact", head: true }),
+      supabase.from("reservation_requests").select("*", { count: "exact", head: true }),
+      supabase
+        .from("reservation_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "new"),
+      supabase.from("hero_media").select("video_url").eq("is_active", true).maybeSingle(),
+      supabase.from("experiences").select("*", { count: "exact", head: true }),
+      supabase.from("pickup_orders").select("*", { count: "exact", head: true }),
+      supabase
+        .from("pickup_orders")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "new"),
+    ]);
 
   const stats = [
     { label: "Menu items", value: items.count ?? 0, href: "/admin/dashboard/menu" },
     { label: "Categories", value: categories.count ?? 0, href: "/admin/dashboard/menu" },
+    {
+      label: "New orders",
+      value: newOrders.count ?? 0,
+      href: "/admin/dashboard/orders",
+      highlight: (newOrders.count ?? 0) > 0,
+    },
+    {
+      label: "All orders",
+      value: orders.count ?? 0,
+      href: "/admin/dashboard/orders",
+    },
     {
       label: "New requests",
       value: pending.count ?? 0,

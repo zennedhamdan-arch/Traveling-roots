@@ -577,3 +577,32 @@
   position: relative;
   margin-left: auto;
 }
+
+/* --- pickup orders --------------------------------------------------------- */
+
+.admin-order-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.admin-order-lines li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.admin-order-line-price {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--a-muted);
+  white-space: nowrap;
+}
+
+.admin-order-total {
+  margin: 0.35rem 0 0;
+  font-size: 1rem;
+}

@@ -17,7 +17,8 @@ Supabase dashboard → **SQL Editor** → paste and run each file **in order**:
 | 1 | `migrations/0001_schema.sql` | Tables, constraints, triggers |
 | 2 | `migrations/0002_rls.sql` | Row Level Security and grants |
 | 3 | `migrations/0003_storage.sql` | Storage buckets and their policies |
-| 4 | `seed.sql` | The real menu, business info and social links |
+| 4 | `migrations/0004_pickup_orders.sql` | Pickup-order table, pricing trigger, policies |
+| 5 | `seed.sql` | The real menu, business info and social links |
 
 `seed.sql` is idempotent — running it twice does not duplicate anything.
 
@@ -54,9 +55,11 @@ npm run db:test
 
 This boots a real Postgres in-process, applies these exact migration files,
 seeds them, then connects as an anonymous visitor, a signed-up non-admin, and
-an allow-listed admin, and asserts what each can and cannot do — 39 checks,
-including that a visitor cannot read the reservation list, cannot self-approve
-a booking, and cannot see unpublished content.
+an allow-listed admin, and asserts what each can and cannot do — 58 checks,
+including that a visitor cannot read the reservation list or the order list,
+cannot self-approve a booking, cannot accept their own pickup order, cannot
+set their own price (totals are computed by the database), and cannot see
+unpublished content.
 
 Run it after any change to the SQL.
 
@@ -66,7 +69,8 @@ Supabase Auth answers *who are you*. It does not answer *may you edit the
 site* — with sign-ups enabled, "authenticated" describes any stranger with an
 email address. So authorization is a row in `admin_users`, checked by an
 `is_admin()` function that every write policy calls. The public may read
-published content and create a reservation request; that is all. Column-level
+published content and create a reservation request or a pickup order; that is
+all. Column-level
 grants add what RLS cannot express: a visitor may insert a reservation but may
 not choose its `status` or write `admin_notes`.
 

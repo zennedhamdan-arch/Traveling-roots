@@ -420,7 +420,7 @@ ships in the admin chunks.
 
 | Who | May do |
 | --- | --- |
-| Anyone | Read published content; create a reservation request |
+| Anyone | Read published content; create a reservation request or a pickup order |
 | A signed-up user who is **not** allow-listed | Nothing more than the above |
 | A row in `admin_users` | Everything |
 
@@ -498,17 +498,25 @@ no redeploy.
 
 | Dashboard tab | What you can do |
 | --- | --- |
-| **Overview** | Counts at a glance: menu items, categories, new/all reservation requests |
+| **Overview** | Counts at a glance: menu items, categories, new/all pickup orders, new/all reservation requests |
 | **Menu** | Edit any item's name, price (RWF), description and variants; publish or hide items and whole categories |
 | **Hero** | Upload a video that replaces the 29-frame scroll sequence; deactivate it to go back to the frames |
+| **Pickup orders** | Orders submitted from the public **`/order`** page; call or WhatsApp the guest to confirm, then move the order through `new → accepted → preparing → ready → completed / cancelled` |
 | **Reservations** | Read every reservation request; filter by status and move them through `new → contacted → confirmed / declined / archived` |
 
 Everything the database stores is also editable directly in Supabase's table
 editor (business info, experiences, offers, testimonials, social links,
 gallery) — those just don't have dedicated dashboard UI yet.
 
-**Pickup orders are not part of this layer.** The panel manages *reservation
-requests*; online ordering would be a separate feature to add.
+**How online ordering works.** The public `/order` page (linked from the nav
+and the reservation section) lists the live menu with quantity steppers; the
+guest leaves a name, phone number and optional pickup time. Nothing is charged
+online — the dashboard shows the order with tappable call and WhatsApp links,
+and you confirm with the guest directly. The **total is computed by the
+database from the live menu when the order is placed**, never by the browser,
+and each order snapshots its prices so later menu edits never rewrite old
+orders. Unpublished categories, unavailable items and made-up prices are
+refused by the database, not by the form.
 
 ### 1. Create the Supabase project
 
@@ -527,7 +535,8 @@ contents of each file below, press **Run**, and repeat — **in this order**:
 | 1 | `supabase/migrations/0001_schema.sql` | Tables, constraints, triggers |
 | 2 | `supabase/migrations/0002_rls.sql` | Row Level Security — who may read/write what |
 | 3 | `supabase/migrations/0003_storage.sql` | The `hero-videos` storage bucket and its policies |
-| 4 | `supabase/seed.sql` | The real menu, business info and social links |
+| 4 | `supabase/migrations/0004_pickup_orders.sql` | The pickup-order table, its pricing trigger and policies |
+| 5 | `supabase/seed.sql` | The real menu, business info and social links |
 
 `seed.sql` is idempotent — running it twice does not duplicate anything.
 
@@ -592,10 +601,11 @@ Day-to-day notes:
 npm run db:test
 ```
 
-39 checks against an in-process Postgres using these exact migration files:
-an anonymous visitor cannot read the reservation list, cannot self-approve a
-booking and cannot see unpublished content; a signed-up non-admin can change
-nothing. Run it after any change to the SQL.
+58 checks against an in-process Postgres using these exact migration files:
+an anonymous visitor cannot read the reservation list or the order list,
+cannot self-approve a booking, cannot accept their own order, cannot set
+their own price and cannot see unpublished content; a signed-up non-admin
+can change nothing. Run it after any change to the SQL.
 
 ### Troubleshooting
 

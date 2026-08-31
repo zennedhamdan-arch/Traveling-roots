@@ -46,6 +46,13 @@ export const menuAction: SiteAction = {
   external: false,
 };
 
+export const pickupAction: SiteAction = {
+  id: "pickup",
+  label: "Order Pickup",
+  href: "/order",
+  external: false,
+};
+
 export const directionsAction: SiteAction | null = restaurant.directionsUrl
   ? {
       id: "directions",
@@ -74,6 +81,7 @@ export const primaryActions: readonly SiteAction[] = [
 ].filter((a): a is SiteAction => a !== null);
 
 export const secondaryActions: readonly SiteAction[] = [
+  pickupAction,
   menuAction,
   directionsAction,
   instagramAction,
