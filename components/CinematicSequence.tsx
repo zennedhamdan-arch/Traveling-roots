@@ -5,12 +5,17 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import {
+  FRAME_DIMENSIONS,
   FRAME_FIT,
+  INITIAL_ORIENTATION,
   LAST_FRAME_INDEX,
   SEQUENCE_TUNING,
   frameSrc,
   frames,
+  orientationOf,
   progressToFrame,
+  type Orientation,
+  type Viewport,
 } from "@/lib/sequence";
 import { SequenceLoader, type SequenceProgress } from "@/lib/sequenceLoader";
 import { useIsomorphicLayoutEffect, useMotionMode } from "@/lib/useMediaQuery";
@@ -21,8 +26,6 @@ import styles from "./CinematicSequence.module.css";
 
 // GSAP plugins must be registered explicitly — never rely on auto-registration.
 gsap.registerPlugin(ScrollTrigger);
-
-type Viewport = "mobile" | "desktop";
 
 /** Fade band, in normalised progress, at each end of a caption's window. */
 const CAPTION_FADE = 0.05;
@@ -41,10 +44,17 @@ export default function CinematicSequence(): React.JSX.Element {
   const paintedFrameRef = useRef<number>(-1);
   const rafRef = useRef<number>(0);
   const pendingFrameRef = useRef<number>(0);
+  /**
+   * Frame orientation, measured from the first decoded frame rather than
+   * assumed. Held in a ref for the paint loop and mirrored into state so CSS
+   * can react — the paint path must never depend on React state.
+   */
+  const orientationRef = useRef<Orientation>(INITIAL_ORIENTATION);
 
   const motionMode = useMotionMode();
   const isReduced = motionMode === "reduced";
 
+  const [orientation, setOrientation] = useState<Orientation>(INITIAL_ORIENTATION);
   const [progress, setProgress] = useState<SequenceProgress>({
     loaded: 0,
     failed: 0,
@@ -88,12 +98,12 @@ export default function CinematicSequence(): React.JSX.Element {
 
     const viewport: Viewport =
       boxW >= SEQUENCE_TUNING.desktopBreakpoint ? "desktop" : "mobile";
-    const safe = SEQUENCE_TUNING.safeArea[viewport];
+    const layout = SEQUENCE_TUNING.layout[orientationRef.current][viewport];
 
     // Keep the subject clear of the nav and the caption overlay by shrinking
     // the *destination box*. With "contain" the frame is never cropped.
-    const availTop = boxH * safe.top;
-    const availH = boxH * (1 - safe.top - safe.bottom);
+    const availTop = boxH * layout.safeTop;
+    const availH = boxH * (1 - layout.safeTop - layout.safeBottom);
 
     const iw = image.naturalWidth || 1;
     const ih = image.naturalHeight || 1;
@@ -104,7 +114,11 @@ export default function CinematicSequence(): React.JSX.Element {
 
     const drawW = iw * scale;
     const drawH = ih * scale;
-    const dx = (boxW - drawW) / 2;
+
+    // Position horizontally around `focusX`, then clamp so the frame can
+    // never leave the canvas on a narrow viewport.
+    const maxDx = Math.max(0, boxW - drawW);
+    const dx = Math.min(Math.max(boxW * layout.focusX - drawW / 2, 0), maxDx);
     const dy = availTop + (availH - drawH) / 2;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -170,7 +184,15 @@ export default function CinematicSequence(): React.JSX.Element {
         const enough = Math.min(SEQUENCE_TUNING.minFramesToStart, next.total);
         if (next.loaded >= enough) setIsReady(true);
       },
-      onFirstFrame: () => {
+      onFirstFrame: (image) => {
+        // Learn the composition from the frames themselves rather than
+        // assuming an aspect ratio. Portrait frames get the split layout.
+        const next = orientationOf(
+          image.naturalWidth || 1,
+          image.naturalHeight || 1,
+        );
+        orientationRef.current = next;
+        setOrientation(next);
         resizeCanvas();
         requestPaint(0);
       },
@@ -342,6 +364,18 @@ export default function CinematicSequence(): React.JSX.Element {
   }, [motionMode, isReady, allFailed, requestPaint]);
 
   /* ---------------------------------------------------------------------- */
+  /* Repaint when the measured orientation changes the composition           */
+  /* ---------------------------------------------------------------------- */
+
+  useEffect(() => {
+    // `orientation` flips the CSS layout, which can resize the canvas box.
+    // Re-measure and repaint the frame that is currently on screen.
+    resizeCanvas();
+    requestPaint(paintedFrameRef.current < 0 ? 0 : paintedFrameRef.current);
+    ScrollTrigger.refresh();
+  }, [orientation, resizeCanvas, requestPaint]);
+
+  /* ---------------------------------------------------------------------- */
   /* Cancel any in-flight rAF on unmount                                     */
   /* ---------------------------------------------------------------------- */
 
@@ -368,6 +402,7 @@ export default function CinematicSequence(): React.JSX.Element {
       id={SECTION_IDS.cinematic}
       className={styles.section}
       data-reduced={isReduced ? "true" : "false"}
+      data-orientation={orientation}
       aria-labelledby="cinematic-heading"
     >
       <div ref={stageRef} className={styles.stage}>
@@ -379,8 +414,8 @@ export default function CinematicSequence(): React.JSX.Element {
             src={frameSrc(LAST_FRAME_INDEX)}
             alt="The finished dish at Traveling Roots."
             className={styles.still}
-            width={1600}
-            height={1000}
+            width={FRAME_DIMENSIONS.width}
+            height={FRAME_DIMENSIONS.height}
             decoding="async"
           />
         ) : (

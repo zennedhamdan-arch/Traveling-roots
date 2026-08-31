@@ -29,7 +29,9 @@ npm run dev      # http://localhost:3000
 | `npm start`           | Serve the production build                          |
 | `npm run typecheck`   | `tsc --noEmit`, strict                              |
 | `npm run lint`        | ESLint (flat config)                                |
-| `npm run frames:check`| Validates the 29 frames: presence, size, weight     |
+| `npm run frames:check`| Validates the 29 frames: presence, size, weight, continuity |
+| `npm run frames:ingest <dir>` | Converts raw extracted frames into `frame-01…29.webp` |
+| `npm run frames:measure` | Re-reads the frames' real dimensions            |
 | `npm run logo:detect` | Re-scans `public/images/` for the logo              |
 
 ---
@@ -46,26 +48,64 @@ assembles from frame 01 → 29, with a tick scale so you can see which frame is
 on screen. They exist purely so the scroll mechanic could be built and tuned.
 They deliberately invent nothing about the real animation.
 
-**To install the real frames:**
+**To install the real frames**, use the ingest script — it handles the messy
+filenames a frame extractor produces:
 
 ```bash
-rm public/sequence/*.webp
-# copy your files in, named exactly:
-#   frame-01.webp … frame-29.webp
+npm run frames:ingest -- /path/to/extracted-frames
 npm run frames:check
 ```
 
-`frames:check` verifies all 29 exist, share one aspect ratio, and stay under a
-180 KB-per-frame mobile budget. Nothing else needs to change — the frame array
-is generated programmatically in `lib/sequence.ts`.
+`frames:ingest` sorts by the **number** in each filename, not alphabetically.
+That one detail matters: a plain sort puts `Serial10` before `Serial2`, which
+is the most common way an image sequence ends up scrambled. It then normalises
+every frame to one size, encodes WebP, and writes `frame-01.webp … frame-NN.webp`.
+Frames are never cropped or stretched — an odd-sized frame is padded and you
+get a warning naming it. Gaps and duplicates in the source numbering are
+reported before anything is written.
+
+If your files are already named correctly you can just copy them in.
+
+`frames:check` then verifies all 29 exist, share one aspect ratio, and stay
+under a 180 KB-per-frame mobile budget — and runs a **continuity pass**:
+
+```
+Frame size: 720×1280  (0.563:1, portrait)
+Sequence weight: 0.64 MB across 29 frames (avg 23 KB)
+
+Continuity: ✓ no black frames, no hard cuts — reads as one shot.
+```
+
+The continuity pass exists because a scroll-scrubbed sequence is not a video.
+The user controls the playhead, so a black frame or a cut to a different scene
+in the middle reads as a bug rather than as an edit. If either is present the
+check names the exact frames.
+
+Nothing else needs to change — the frame array is generated programmatically
+in `lib/sequence.ts`.
 
 Once the real frames are in, delete `scripts/generate-placeholder-frames.mjs`.
 
-**Recommended encoding** (roughly 60–120 KB per frame at 1600px wide):
+**Recommended encoding** (roughly 60–120 KB per frame):
 
 ```bash
-cwebp -q 80 -m 6 -resize 1600 0 frame-01.png -o frame-01.webp
+cwebp -q 80 -m 6 -resize 1080 0 frame-01.png -o frame-01.webp
 ```
+
+#### The layout follows the frames
+
+`scripts/measure-frames.mjs` runs on every `dev` / `build`, reads
+`frame-01.webp` and writes `data/frames.generated.ts`. The section renders
+`data-orientation="portrait"` or `"landscape"` **on the server**, so the right
+composition is in place on first paint instead of jumping after hydration.
+
+That matters for tall frames. A 9:16 frame contained inside a 16:9 desktop
+viewport only fills about a quarter of the width — centring it strands the
+food in the middle of two dead margins. So for portrait frames above 1024px
+the frame is pushed right (`SEQUENCE_TUNING.layout.portrait.desktop.focusX`)
+and the copy takes the left column, as an editorial split. Mobile stays
+centred and near-full-bleed. Swap in landscape frames and the centred
+composition returns on its own — no code change.
 
 ### 2. The logo — `public/images/logo.png`
 

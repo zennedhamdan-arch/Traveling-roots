@@ -19,8 +19,14 @@ import path from "node:path";
 import sharp from "sharp";
 
 const FRAME_COUNT = 29;
-const WIDTH = 1600;
-const HEIGHT = 1000;
+// Matches the real source sequence: 720x1280, 9:16 portrait. Keeping the
+// placeholders at the true aspect ratio is the whole point -- a landscape
+// stand-in would have hidden how much of a desktop viewport a tall frame
+// leaves empty.
+const WIDTH = 720;
+const HEIGHT = 1280;
+/** Geometry is derived from the short edge so any aspect ratio composes. */
+const BASE = Math.min(WIDTH, HEIGHT);
 const OUT_DIR = path.join(process.cwd(), "public", "sequence");
 
 const CREAM = "#f6f1e7";
@@ -36,23 +42,23 @@ function buildSvg(index) {
   const e = easeInOut(t);
 
   const cx = WIDTH / 2;
-  const cy = HEIGHT / 2 - 20;
+  const cy = HEIGHT / 2 - BASE * 0.03;
 
   // Central form grows and settles.
-  const plateR = lerp(40, 250, e);
+  const plateR = lerp(BASE * 0.055, BASE * 0.35, e);
   const plateOpacity = lerp(0.12, 0.4, e);
 
   // Eight satellites converge inward and rotate into place.
   const satellites = [];
   const COUNT = 8;
-  const orbit = lerp(560, 320, e);
+  const orbit = lerp(BASE * 0.78, BASE * 0.45, e);
   const spin = lerp(-75, 0, e);
 
   for (let i = 0; i < COUNT; i += 1) {
     const angle = ((i / COUNT) * 360 + spin) * (Math.PI / 180);
     const x = cx + Math.cos(angle) * orbit;
     const y = cy + Math.sin(angle) * orbit * 0.62;
-    const r = lerp(10, 30, e) * (0.7 + 0.3 * Math.sin(i * 1.7));
+    const r = lerp(BASE * 0.014, BASE * 0.042, e) * (0.7 + 0.3 * Math.sin(i * 1.7));
     const o = Math.min(1, lerp(0.15, 0.85, e));
     const fill = i % 3 === 0 ? GOLD : i % 3 === 1 ? MOSS : SAND;
     satellites.push(
@@ -63,15 +69,15 @@ function buildSvg(index) {
   // Concentric rings that tighten as the composition resolves.
   const rings = [0, 1, 2]
     .map((i) => {
-      const r = plateR + lerp(180, 46, e) * (i + 1);
+      const r = plateR + lerp(BASE * 0.25, BASE * 0.064, e) * (i + 1);
       const o = lerp(0.06, 0.2, e) / (i * 0.5 + 1);
       return `<ellipse cx="${cx}" cy="${cy}" rx="${r.toFixed(1)}" ry="${(r * 0.62).toFixed(1)}" fill="none" stroke="${CREAM}" stroke-width="1.25" opacity="${o.toFixed(3)}"/>`;
     })
     .join("");
 
   // A 29-step scale along the bottom: the active tick marks the frame.
-  const scaleY = HEIGHT - 96;
-  const scaleW = 620;
+  const scaleY = HEIGHT - BASE * 0.13;
+  const scaleW = WIDTH * 0.72;
   const scaleX = cx - scaleW / 2;
   const ticks = Array.from({ length: FRAME_COUNT }, (_, i) => {
     const x = scaleX + (scaleW / (FRAME_COUNT - 1)) * i;

@@ -4,6 +4,8 @@
  * All tuning lives here — no magic numbers scattered through the component.
  */
 
+import { frameDimensions } from "@/data/frames.generated";
+
 /** EXACTLY 29 frames. Do not change unless the source sequence changes. */
 export const FRAME_COUNT = 29;
 
@@ -32,6 +34,23 @@ export function progressToFrame(progress: number): number {
   const clamped = progress < 0 ? 0 : progress > 1 ? 1 : progress;
   return Math.round(clamped * LAST_FRAME_INDEX);
 }
+
+export type Viewport = "mobile" | "desktop";
+/** Detected from the frames themselves at runtime — never hard-coded. */
+export type Orientation = "portrait" | "landscape";
+
+export type FrameLayout = Readonly<{
+  /** Fraction of canvas height kept clear at the top (for the nav). */
+  safeTop: number;
+  /** Fraction kept clear at the bottom (for captions / scroll hint). */
+  safeBottom: number;
+  /**
+   * Horizontal centre of the drawn frame, as a fraction of canvas width.
+   * 0.5 centres it. Pushing it right on wide screens leaves a text column
+   * beside a tall frame instead of two dead margins.
+   */
+  focusX: number;
+}>;
 
 export const SEQUENCE_TUNING = {
   /**
@@ -64,14 +83,25 @@ export const SEQUENCE_TUNING = {
   desktopBreakpoint: 768,
 
   /**
-   * Safe-area insets (fractions of the canvas box) kept clear of the drawn
-   * frame so the fixed nav and the caption overlay never sit on top of the
-   * subject. Applied as a "contain" shrink, so the image is never cropped.
+   * Composition, per frame orientation and per viewport.
+   *
+   * A tall 9:16 frame contained inside a 16:9 desktop viewport only occupies
+   * about a third of the width. Centring it wastes both margins, so on
+   * desktop the frame is pushed right and the copy takes the left column —
+   * an editorial split rather than a small object floating in space.
+   *
+   * These shrink the *destination box*; the frame itself is never cropped.
    */
-  safeArea: {
-    mobile: { top: 0.1, bottom: 0.2 },
-    desktop: { top: 0.09, bottom: 0.14 },
-  },
+  layout: {
+    portrait: {
+      mobile: { safeTop: 0.07, safeBottom: 0.19, focusX: 0.5 },
+      desktop: { safeTop: 0.05, safeBottom: 0.05, focusX: 0.7 },
+    },
+    landscape: {
+      mobile: { safeTop: 0.1, safeBottom: 0.2, focusX: 0.5 },
+      desktop: { safeTop: 0.09, safeBottom: 0.14, focusX: 0.5 },
+    },
+  } satisfies Record<Orientation, Record<Viewport, FrameLayout>>,
 
   /**
    * How many frames must be decoded before the experience is released.
@@ -84,3 +114,20 @@ export const SEQUENCE_TUNING = {
 /** Presentation fit. "contain" guarantees the subject is never cropped. */
 export type FrameFit = "contain" | "cover";
 export const FRAME_FIT: FrameFit = "contain";
+
+/** Classifies a frame's aspect ratio. Portrait drives the split layout. */
+export function orientationOf(width: number, height: number): Orientation {
+  return width / height < 0.95 ? "portrait" : "landscape";
+}
+
+/**
+ * Intrinsic frame size, measured from the real files at build time by
+ * scripts/measure-frames.mjs. Used to render the correct composition on the
+ * server, so the layout doesn't jump once the first frame decodes.
+ */
+export const FRAME_DIMENSIONS = frameDimensions;
+
+export const INITIAL_ORIENTATION: Orientation = orientationOf(
+  frameDimensions.width,
+  frameDimensions.height,
+);

@@ -18,8 +18,12 @@ export type SequenceProgress = Readonly<{
 
 export type SequenceLoaderOptions = Readonly<{
   onProgress?: (progress: SequenceProgress) => void;
-  /** Fired once, as soon as the very first frame is paintable. */
-  onFirstFrame?: (image: CanvasImageSource) => void;
+  /**
+   * Fired once, as soon as the very first frame is paintable. Receives the
+   * decoded image so callers can measure the sequence's real dimensions
+   * instead of assuming them.
+   */
+  onFirstFrame?: (image: HTMLImageElement) => void;
   /** Fired once every frame has either decoded or failed. */
   onSettled?: (progress: SequenceProgress) => void;
 }>;

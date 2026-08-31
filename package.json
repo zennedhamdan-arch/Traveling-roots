@@ -3,15 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/detect-logo.mjs",
+    "predev": "node scripts/detect-logo.mjs && node scripts/measure-frames.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/detect-logo.mjs",
+    "prebuild": "node scripts/detect-logo.mjs && node scripts/measure-frames.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "frames:check": "node scripts/check-frames.mjs",
-    "logo:detect": "node scripts/detect-logo.mjs"
+    "logo:detect": "node scripts/detect-logo.mjs",
+    "frames:ingest": "node scripts/ingest-frames.mjs",
+    "frames:measure": "node scripts/measure-frames.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

@@ -354,3 +354,65 @@
     transition: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Portrait frames on wide screens — editorial split
+
+   A 9:16 frame contained inside a 16:9 viewport is only about a quarter of
+   the width. Centring it leaves two dead margins and makes the food look
+   small. So above 1024px the frame is pushed right (see SEQUENCE_TUNING
+   .layout.portrait.desktop.focusX) and the copy claims the left column.
+
+   Everything below is scoped to [data-orientation="portrait"], which is set
+   from the frames' measured dimensions — swap in landscape frames and the
+   centred composition comes back automatically. It is also scoped to
+   [data-reduced="false"] so it never fights the reduced-motion layout.
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 1024px) {
+  .section[data-orientation="portrait"][data-reduced="false"] .hero {
+    right: auto;
+    left: 0;
+    width: min(46%, 33rem);
+    margin-left: var(--space-gutter);
+    padding: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .section[data-orientation="portrait"][data-reduced="false"] .headline {
+    font-size: clamp(2.6rem, 4.4vw, 4.1rem);
+  }
+
+  /* Captions move into the same column and sit below the hero's baseline,
+     so the two never collide during the 0 → 8% handover. */
+  .section[data-orientation="portrait"][data-reduced="false"] .captions {
+    right: auto;
+    left: 0;
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    width: min(46%, 33rem);
+    margin-left: var(--space-gutter);
+    padding: 0;
+    place-items: center start;
+  }
+
+  .section[data-orientation="portrait"][data-reduced="false"] .caption {
+    text-align: left;
+    max-width: 16ch;
+    font-size: clamp(2.1rem, 3.6vw, 3.2rem);
+  }
+
+  .section[data-orientation="portrait"][data-reduced="false"] .caption:first-child {
+    font-size: clamp(1.4rem, 2.4vw, 2.1rem);
+  }
+
+  /* Anchor the hint to the text column rather than the middle of the screen,
+     where it would sit on top of the frame. */
+  .section[data-orientation="portrait"][data-reduced="false"] .scrollHint {
+    left: var(--space-gutter);
+    transform: none;
+    align-items: flex-start;
+  }
+}
