@@ -1,0 +1,39 @@
+.category {
+  display: block;
+}
+
+.header {
+  margin-bottom: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.title {
+  margin: 0 0 0.4rem;
+  font-size: clamp(1.6rem, 4.5vw, 2.2rem);
+  font-weight: 400;
+}
+
+.intro {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--tr-text-muted);
+  font-size: 0.97rem;
+  font-style: italic;
+}
+
+.items {
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2rem);
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .items {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .items {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

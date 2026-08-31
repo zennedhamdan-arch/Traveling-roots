@@ -1,0 +1,60 @@
+.page {
+  padding-block: calc(var(--nav-height) + clamp(3rem, 8vw, 5rem))
+    clamp(4rem, 10vw, 7rem);
+  background: var(--tr-surface);
+  color: var(--tr-text);
+}
+
+.title {
+  margin: 0 0 0.6rem;
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  font-weight: 300;
+}
+
+.updated {
+  margin: 0 0 clamp(2rem, 5vw, 3rem);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tr-stone);
+}
+
+.prose {
+  display: grid;
+  gap: 1.15rem;
+  max-width: var(--measure);
+  color: var(--tr-text-muted);
+}
+
+.prose h2 {
+  margin-top: 1.5rem;
+  font-size: clamp(1.25rem, 3.2vw, 1.6rem);
+  color: var(--tr-text);
+}
+
+.prose ul {
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+
+.prose a {
+  color: var(--tr-forest);
+}
+
+.back {
+  margin-top: clamp(2.5rem, 6vw, 3.5rem);
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--tr-line);
+  font-size: 0.9rem;
+}
+
+.back a {
+  color: var(--tr-forest);
+  text-decoration: none;
+}
+
+.back a:hover {
+  text-decoration: underline;
+}

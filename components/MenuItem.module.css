@@ -1,0 +1,121 @@
+.item {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: transparent;
+  border-bottom: 1px solid var(--tr-line);
+  padding-bottom: clamp(1.25rem, 3vw, 1.75rem);
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 1.1rem;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--tr-surface-alt);
+  display: grid;
+  place-items: center;
+}
+
+.image {
+  object-fit: cover;
+  transition: transform 0.8s var(--ease-out);
+}
+
+/* Typographic fallback when a dish has no photograph — never a stock photo. */
+.mediaFallback {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 8vw, 3.75rem);
+  font-style: italic;
+  color: var(--tr-stone);
+  opacity: 0.5;
+  user-select: none;
+}
+
+.signature {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  background: var(--tr-ink);
+  color: var(--tr-sand);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.body {
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 3.2vw, 1.4rem);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.price {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--tr-forest);
+  letter-spacing: 0.02em;
+}
+
+.priceMuted {
+  margin: 0;
+  flex-shrink: 0;
+  color: var(--tr-stone);
+}
+
+.description {
+  margin: 0;
+  max-width: 42ch;
+  color: var(--tr-text-muted);
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.availability {
+  margin: 0;
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tr-clay);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.15rem 0 0;
+}
+
+.tag {
+  padding: 0.22rem 0.6rem;
+  border: 1px solid var(--tr-line);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--tr-moss);
+}
+
+@media (hover: hover) {
+  .item:hover .image {
+    transform: scale(1.04);
+  }
+}

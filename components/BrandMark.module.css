@@ -1,0 +1,63 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.image {
+  height: auto;
+  width: auto;
+  object-fit: contain;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.42em;
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.root[data-stacked="true"] .wordmark {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1em;
+  line-height: 1.05;
+}
+
+.word:last-child {
+  font-style: italic;
+  letter-spacing: 0.1em;
+}
+
+/* --- sizes --- */
+.hero .wordmark {
+  font-size: clamp(1.05rem, 3.4vw, 1.6rem);
+  letter-spacing: 0.34em;
+}
+
+.hero .image {
+  max-height: clamp(64px, 12vw, 132px);
+}
+
+.nav .wordmark {
+  font-size: clamp(0.85rem, 2.4vw, 1.02rem);
+  letter-spacing: 0.2em;
+}
+
+.nav .image {
+  max-height: 40px;
+}
+
+.footer .wordmark {
+  font-size: clamp(1.1rem, 4vw, 1.45rem);
+  letter-spacing: 0.24em;
+}
+
+.footer .image {
+  max-height: 84px;
+}

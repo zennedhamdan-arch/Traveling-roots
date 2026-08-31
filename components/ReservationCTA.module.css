@@ -1,0 +1,57 @@
+.section {
+  padding-block: var(--space-section);
+  background: var(--tr-forest);
+  color: var(--tr-cream);
+}
+
+.inner {
+  max-width: 46rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.headline {
+  margin: 0 0 1.1rem;
+  font-size: clamp(2rem, 6.5vw, 3.5rem);
+  font-weight: 300;
+}
+
+.body {
+  margin: 0 auto clamp(2rem, 5vw, 2.75rem);
+  max-width: 40ch;
+  color: var(--tr-sand);
+  font-size: clamp(1rem, 2.4vw, 1.1rem);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.85rem;
+}
+
+/* Full-width, thumb-friendly buttons on the smallest screens. */
+@media (max-width: 479px) {
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.secondary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 1.4rem;
+  margin: clamp(1.75rem, 4vw, 2.5rem) 0 0;
+  color: var(--tr-sand);
+}
+
+.meta {
+  margin: clamp(1.75rem, 4vw, 2.5rem) 0 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--tr-sand);
+  opacity: 0.62;
+}
