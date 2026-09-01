@@ -179,7 +179,7 @@ export const locationSection = {
 
 export const reservation = {
   headline: "Ready to experience Traveling Roots?",
-  body: "Reserve a table, or send us a message — we'll take it from there.",
+  body: "Reserve your table online in under a minute — or call and we'll take it from there.",
 } as const;
 
 export const seo = {

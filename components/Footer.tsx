@@ -35,7 +35,7 @@ export default function Footer(): React.JSX.Element {
             <h2 className={styles.colTitle}>Plan your visit</h2>
             <ul>
               <li>
-                <a href={`#${SECTION_IDS.reserve}`} className={styles.link}>
+                <a href="/reservation" className={styles.link}>
                   Reserve a table
                 </a>
               </li>

@@ -516,7 +516,7 @@ The dashboard navigation is a grouped sidebar on desktop and a hamburger drawer 
 | **Experiences** | Add, edit, photograph, reorder, hide or delete the public experiences cards (duration and price optional) |
 | **Gallery** | Upload photos (JPG/PNG/WebP/AVIF, up to 10 MB) with captions and alt text, reorder them, hide them or delete them — no extra SQL to run, the table and storage bucket are part of the standard setup |
 | **Offers / Testimonials** | Manage specials and guest quotes (add, edit, activate/publish, delete) |
-| **Business info** | Name, phone, WhatsApp, email, address, directions URL, opening hours and social links — consumed live by the public site |
+| **Business info** | Name, phone, WhatsApp, email, address, directions URL, opening hours, social links — and the floating WhatsApp button (on/off + pre-filled message) — consumed live by the public site |
 | **Pickup orders** | Orders submitted from the public **`/order`** page; call or WhatsApp the guest to confirm, then move the order through `new → accepted → preparing → ready → completed / cancelled` |
 | **Reservations** | Read every reservation request (form or phone); filter by status and move them through `new → contacted → confirmed / declined / archived` |
 
@@ -561,7 +561,8 @@ contents of each file below, press **Run**, and repeat — **in this order**:
 | 2 | `supabase/migrations/0002_rls.sql` | Row Level Security — who may read/write what |
 | 3 | `supabase/migrations/0003_storage.sql` | The `hero-videos` storage bucket and its policies |
 | 4 | `supabase/migrations/0004_pickup_orders.sql` | The pickup-order table, its pricing trigger and policies |
-| 5 | `supabase/seed.sql` | The real menu, business info and social links |
+| 5 | `supabase/migrations/0005_whatsapp_floating.sql` | Floating WhatsApp button settings (on/off, pre-filled message) |
+| 6 | `supabase/seed.sql` | The real menu, business info and social links |
 
 `seed.sql` is idempotent — running it twice does not duplicate anything.
 
@@ -626,7 +627,7 @@ Day-to-day notes:
 npm run db:test
 ```
 
-62 checks against an in-process Postgres using these exact migration files:
+66 checks against an in-process Postgres using these exact migration files:
 an anonymous visitor cannot read the reservation list or the order list,
 cannot self-approve a booking, cannot accept their own order, cannot set
 their own price and cannot see unpublished content; a signed-up non-admin

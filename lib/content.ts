@@ -410,6 +410,70 @@ export const getGalleryItems = cache(() => selectAll<GalleryItemRow>("gallery_it
 export const getOffers = cache(() => selectAll<OfferRow>("offers"));
 export const getTestimonials = cache(() => selectAll<TestimonialRow>("testimonials"));
 
+/* -------------------------------------------------------------------------- */
+/* Floating WhatsApp button                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The floating WhatsApp button's configuration — a GLOBAL conversion element,
+ * so it is content: the number comes from business_info (editable under
+ * Business → Business info), and the on/off switch plus the pre-filled
+ * message come from site_settings (editable on the same page).
+ *
+ * Everything degrades to sane defaults: no database, or the row missing,
+ * means the button still appears with the verified number and the standard
+ * greeting. `null` means "do not render it at all" (switched off, or no
+ * number anywhere).
+ */
+export type WhatsAppFloating = Readonly<{
+  /** Full wa.me deep link, message included when one is set. */
+  href: string;
+  message: string;
+}>;
+
+const WHATSAPP_DEFAULT_MESSAGE = "Hello Traveling Roots, I'd like to make an enquiry.";
+
+export const getWhatsAppFloating = cache(async (): Promise<WhatsAppFloating | null> => {
+  const restaurant = await getRestaurant();
+  if (!restaurant.whatsapp) return null;
+
+  const digits = restaurant.whatsapp.e164.replace(/[^\d]/g, "");
+  if (digits.length === 0) return null;
+
+  let enabled = true;
+  let message = WHATSAPP_DEFAULT_MESSAGE;
+
+  if (isSupabaseConfigured) {
+    try {
+      const supabase = createSupabasePublicClient();
+      if (supabase) {
+        const { data } = await supabase
+          .from("site_settings")
+          .select("whatsapp_floating_enabled, whatsapp_default_message")
+          .eq("id", 1)
+          .maybeSingle();
+
+        if (data) {
+          enabled = data.whatsapp_floating_enabled;
+          if (typeof data.whatsapp_default_message === "string"
+            && data.whatsapp_default_message.trim().length > 0) {
+            message = data.whatsapp_default_message;
+          }
+        }
+      }
+    } catch {
+      /* The button is an enhancement; the verified defaults stand. */
+    }
+  }
+
+  if (!enabled) return null;
+
+  return {
+    href: `https://wa.me/${digits}?text=${encodeURIComponent(message)}`,
+    message,
+  };
+});
+
 /** Social links, falling back to the verified ones in data/restaurant.ts. */
 export const getSocialLinks = cache(async () => {
   const rows = await selectAll<SocialLinkRow>("social_links");

@@ -151,6 +151,7 @@ async function main() {
     "0002_rls.sql",
     "0003_storage.sql",
     "0004_pickup_orders.sql",
+    "0005_whatsapp_floating.sql",
   ]) {
     const sql = await read(path.join("supabase", "migrations", file));
     // pgcrypto ships with Supabase; PGlite has gen_random_uuid() in core.
@@ -434,6 +435,62 @@ async function main() {
   await denied(db, "CANNOT delete an order after submitting it", () =>
     as(db, "anon", null, () => db.query("delete from public.pickup_orders")),
   );
+
+  /* ------------------------------------------------------------------ */
+  console.log("\nFloating WhatsApp button settings");
+  /* ------------------------------------------------------------------ */
+
+  {
+    const row = await db.query(
+      `select whatsapp_floating_enabled, whatsapp_default_message
+       from public.site_settings where id = 1`,
+    );
+    check("settings row exists with floating enabled by default",
+      row.rows.length === 1 && row.rows[0].whatsapp_floating_enabled === true,
+      JSON.stringify(row.rows[0]));
+  }
+
+  await as(db, "anon", null, async () => {
+    const row = await db.query(
+      "select whatsapp_floating_enabled from public.site_settings where id = 1",
+    );
+    check("the public can read the button setting", row.rows.length === 1);
+  });
+
+  await changesNothing(
+    db,
+    "CANNOT hide the WhatsApp button (non-admin)",
+    () =>
+      as(db, "authenticated", INTRUDER, () =>
+        db.query(
+          "update public.site_settings set whatsapp_floating_enabled = false where id = 1",
+        ),
+      ),
+    async () => {
+      const r = await db.query(
+        "select whatsapp_floating_enabled from public.site_settings where id = 1",
+      );
+      return r.rows[0].whatsapp_floating_enabled === true;
+    },
+  );
+
+  await as(db, "authenticated", ADMIN, async () => {
+    await db.query(
+      `update public.site_settings
+       set whatsapp_default_message = 'Karibu!', whatsapp_floating_enabled = false
+       where id = 1`,
+    );
+    const r = await db.query(
+      "select whatsapp_default_message, whatsapp_floating_enabled from public.site_settings where id = 1",
+    );
+    check("admin can configure the button",
+      r.rows[0].whatsapp_default_message === "Karibu!" &&
+        r.rows[0].whatsapp_floating_enabled === false);
+    // Restore the shipped default for any later checks.
+    await db.query(
+      "update public.site_settings set whatsapp_floating_enabled = true where id = 1",
+    );
+  });
 
   /* ------------------------------------------------------------------ */
   console.log("\nSigned-up user who is NOT an admin");

@@ -18,7 +18,8 @@ Supabase dashboard → **SQL Editor** → paste and run each file **in order**:
 | 2 | `migrations/0002_rls.sql` | Row Level Security and grants |
 | 3 | `migrations/0003_storage.sql` | Storage buckets and their policies |
 | 4 | `migrations/0004_pickup_orders.sql` | Pickup-order table, pricing trigger, policies |
-| 5 | `seed.sql` | The real menu, business info and social links |
+| 5 | `migrations/0005_whatsapp_floating.sql` | Floating WhatsApp button settings |
+| 6 | `seed.sql` | The real menu, business info and social links |
 
 `seed.sql` is idempotent — running it twice does not duplicate anything.
 
@@ -55,7 +56,7 @@ npm run db:test
 
 This boots a real Postgres in-process, applies these exact migration files,
 seeds them, then connects as an anonymous visitor, a signed-up non-admin, and
-an allow-listed admin, and asserts what each can and cannot do — 62 checks,
+an allow-listed admin, and asserts what each can and cannot do — 66 checks,
 including that a visitor cannot read the reservation list or the order list,
 cannot self-approve a booking, cannot accept their own pickup order, cannot
 set their own price (totals are computed by the database), and cannot see

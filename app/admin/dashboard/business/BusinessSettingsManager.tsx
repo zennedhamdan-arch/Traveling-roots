@@ -4,8 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { BusinessInfoRow, SocialLinkRow } from "@/lib/supabase/types";
-import type { OpeningHourRow } from "@/lib/supabase/types";
+import type {
+  BusinessInfoRow,
+  OpeningHourRow,
+  SiteSettingsRow,
+  SocialLinkRow,
+} from "@/lib/supabase/types";
 
 /**
  * Business settings.
@@ -22,11 +26,13 @@ import type { OpeningHourRow } from "@/lib/supabase/types";
 type Props = Readonly<{
   initialInfo: BusinessInfoRow | null;
   initialSocials: readonly SocialLinkRow[];
+  initialSettings: SiteSettingsRow | null;
 }>;
 
 export default function BusinessSettingsManager({
   initialInfo,
   initialSocials,
+  initialSettings,
 }: Props): React.JSX.Element {
   const router = useRouter();
   const [status, setStatus] = useState<string | null>(null);
@@ -49,6 +55,16 @@ export default function BusinessSettingsManager({
 
   const [socials, setSocials] = useState<readonly SocialLinkRow[]>(initialSocials);
   const [newSocial, setNewSocial] = useState({ platform: "", label: "", url: "" });
+
+  // Floating WhatsApp button (stored in site_settings; number comes from the
+  // WhatsApp field above).
+  const [floatingEnabled, setFloatingEnabled] = useState(
+    initialSettings?.whatsapp_floating_enabled ?? true,
+  );
+  const [floatingMessage, setFloatingMessage] = useState(
+    initialSettings?.whatsapp_default_message ??
+      "Hello Traveling Roots, I'd like to make an enquiry.",
+  );
 
   const set = (key: keyof typeof form, value: string): void =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -74,6 +90,52 @@ export default function BusinessSettingsManager({
         .eq("id", 1);
       if (updateError) throw updateError;
       setStatus("Business info saved — the site picks it up within a minute.");
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Saving failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveFloatingSettings(): Promise<void> {
+    setBusy(true);
+    setError(null);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const message =
+        floatingMessage.trim().length > 0
+          ? floatingMessage.trim()
+          : null; /* null = the built-in greeting */
+
+      const update = await supabase
+        .from("site_settings")
+        .update({
+          whatsapp_floating_enabled: floatingEnabled,
+          whatsapp_default_message: message,
+        })
+        .eq("id", 1)
+        .select("id")
+        .maybeSingle();
+
+      if (update.error) throw update.error;
+
+      /* First run on a project whose settings row was never seeded: create it
+         rather than silently saving nothing. */
+      if (!update.data) {
+        const { error: insertError } = await supabase.from("site_settings").insert({
+          id: 1,
+          whatsapp_floating_enabled: floatingEnabled,
+          whatsapp_default_message: message,
+        });
+        if (insertError) throw insertError;
+      }
+
+      setStatus(
+        floatingEnabled
+          ? "Saved — the floating WhatsApp button is on (changes show on the site within a minute)."
+          : "Saved — the floating WhatsApp button is now hidden.",
+      );
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Saving failed.");
@@ -282,6 +344,43 @@ export default function BusinessSettingsManager({
           </button>
           <button type="button" className="admin-button" disabled={busy} onClick={() => void saveInfo()}>
             Save hours
+          </button>
+        </div>
+      </div>
+
+      <div className="admin-card">
+        <h2 className="admin-card-title">Floating WhatsApp button</h2>
+        <p className="admin-muted">
+          The green button fixed to the bottom-right of every public page. It
+          opens a WhatsApp chat using the WhatsApp number from the details
+          above, with the message below pre-filled.
+        </p>
+        <label className="admin-check admin-check-inline">
+          <input
+            type="checkbox"
+            checked={floatingEnabled}
+            disabled={busy}
+            onChange={(e) => setFloatingEnabled(e.target.checked)}
+          />
+          Show the floating WhatsApp button
+        </label>
+        <label className="admin-field">
+          <span className="admin-label">Pre-filled message</span>
+          <textarea
+            value={floatingMessage}
+            onChange={(e) => setFloatingMessage(e.target.value)}
+            rows={2}
+            maxLength={300}
+          />
+        </label>
+        <div className="admin-row">
+          <button
+            type="button"
+            className="admin-button"
+            disabled={busy}
+            onClick={() => void saveFloatingSettings()}
+          >
+            Save WhatsApp button settings
           </button>
         </div>
       </div>
