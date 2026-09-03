@@ -27,8 +27,6 @@ export type SiteSettingsRow = {
   canonical_url: string | null;
   hero_video_enabled: boolean;
   maintenance_mode: boolean;
-  whatsapp_floating_enabled: boolean;
-  whatsapp_default_message: string | null;
   updated_at: string;
 };
 

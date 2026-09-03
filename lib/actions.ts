@@ -6,7 +6,7 @@
  * is ever rendered.
  */
 
-import { restaurant } from "@/data/restaurant";
+import { restaurant, telHref } from "@/data/restaurant";
 import { SECTION_IDS } from "@/data/site";
 
 export type SiteAction = Readonly<{
@@ -18,21 +18,16 @@ export type SiteAction = Readonly<{
   hint?: string;
 }>;
 
-/**
- * "Reserve a Table" — opens the dedicated reservation page.
- *
- * Every Reserve CTA on the site funnels here: the navbar button, the reserve
- * section and the footer. The phone number stays available as a separate,
- * clearly-labelled action — but the promise "Reserve" makes is "take me to
- * the form", not "start a phone call".
- */
-export const reserveAction: SiteAction = {
-  id: "reserve",
-  label: "Reserve a Table",
-  href: "/reservation",
-  external: false,
-  hint: "Go to the reservation form",
-};
+/** "Reserve a Table" — reservations are taken by phone, so this dials. */
+export const reserveAction: SiteAction | null = telHref
+  ? {
+      id: "reserve",
+      label: "Reserve a Table",
+      href: telHref,
+      external: false,
+      hint: `Call ${restaurant.phone?.display ?? ""} to reserve`,
+    }
+  : null;
 
 export const whatsappAction: SiteAction | null = restaurant.whatsapp
   ? {

@@ -55,19 +55,3 @@
   color: var(--tr-sand);
   opacity: 0.62;
 }
-
-/* --- request form ------------------------------------------------------------ */
-
-.formWrap {
-  margin-top: clamp(2rem, 5vw, 3rem);
-  text-align: left;
-}
-
-.formDivider {
-  text-align: center;
-  color: var(--tr-stone);
-  font-size: 0.82rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  margin: 0 0 1rem;
-}

@@ -11,9 +11,7 @@ export const SECTION_IDS = {
   story: "our-story",
   experiences: "experiences",
   menu: "menu",
-  gallery: "gallery",
   reserve: "reserve",
-  location: "location",
   contact: "contact",
 } as const;
 
@@ -48,7 +46,6 @@ export const navLinks: readonly NavLink[] = [
   { label: "Order Pickup", href: "/order" },
   { label: "Our Story", href: `#${SECTION_IDS.story}` },
   { label: "Experiences", href: `#${SECTION_IDS.experiences}` },
-  { label: "Gallery", href: `#${SECTION_IDS.gallery}` },
   { label: "Contact", href: `#${SECTION_IDS.contact}` },
 ];
 
@@ -164,22 +161,9 @@ export const experiences = {
   ],
 } as const;
 
-export const gallery = {
-  eyebrow: "Gallery",
-  headline: "A look inside Traveling Roots.",
-  lede: "The garden, the plates, the room — photographed as it is, no stock imagery.",
-  empty:
-    "Photos are coming soon. In the meantime, the kitchen is very much real — come see it in person.",
-} as const;
-
-export const locationSection = {
-  eyebrow: "Find us",
-  headline: "In the heart of Musanze.",
-} as const;
-
 export const reservation = {
   headline: "Ready to experience Traveling Roots?",
-  body: "Reserve your table online in under a minute — or call and we'll take it from there.",
+  body: "Reserve a table, or send us a message — we'll take it from there.",
 } as const;
 
 export const seo = {

@@ -6,7 +6,6 @@ import styles from "./Footer.module.css";
 
 export default function Footer(): React.JSX.Element {
   const year = new Date().getFullYear();
-  const brandBlurb = restaurant.about[0];
 
   return (
     <footer id={SECTION_IDS.contact} className={styles.footer}>
@@ -15,7 +14,6 @@ export default function Footer(): React.JSX.Element {
           <div className={styles.brandCol}>
             <BrandMark size="footer" stacked />
             <p className={styles.tagline}>{restaurant.tagline}</p>
-            {brandBlurb ? <p className={styles.blurb}>{brandBlurb}</p> : null}
           </div>
 
           <nav className={styles.linkCol} aria-label="Footer">
@@ -28,32 +26,6 @@ export default function Footer(): React.JSX.Element {
                   </a>
                 </li>
               ))}
-            </ul>
-          </nav>
-
-          <nav className={styles.linkCol} aria-label="Plan your visit">
-            <h2 className={styles.colTitle}>Plan your visit</h2>
-            <ul>
-              <li>
-                <a href="/reservation" className={styles.link}>
-                  Reserve a table
-                </a>
-              </li>
-              <li>
-                <a href={`#${SECTION_IDS.location}`} className={styles.link}>
-                  Location &amp; map
-                </a>
-              </li>
-              <li>
-                <a href={`#${SECTION_IDS.gallery}`} className={styles.link}>
-                  Gallery
-                </a>
-              </li>
-              <li>
-                <a href="/order" className={styles.link}>
-                  Order pickup
-                </a>
-              </li>
             </ul>
           </nav>
 

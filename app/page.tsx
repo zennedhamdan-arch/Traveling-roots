@@ -1,15 +1,12 @@
 import dynamic from "next/dynamic";
 
 import { SECTION_IDS } from "@/data/site";
-import { getHeroVideo, getMenu, getExperiences } from "@/lib/content";
-import { formatPrice } from "@/lib/content";
+import { getHeroVideo, getMenu } from "@/lib/content";
 import HeroVideo from "@/components/HeroVideo";
 import StorySection from "@/components/StorySection";
-import Experiences, { type ExperienceItem } from "@/components/Experiences";
+import Experiences from "@/components/Experiences";
 import Menu from "@/components/Menu";
-import Gallery from "@/components/Gallery";
 import ReservationCTA from "@/components/ReservationCTA";
-import LocationSection from "@/components/LocationSection";
 import Footer from "@/components/Footer";
 
 /**
@@ -48,22 +45,7 @@ const CinematicSequence = dynamic(() => import("@/components/CinematicSequence")
 export const revalidate = 60;
 
 export default async function HomePage(): Promise<React.JSX.Element> {
-  const [heroVideo, menu, experienceRows] = await Promise.all([
-    getHeroVideo(),
-    getMenu(),
-    getExperiences(),
-  ]);
-
-  /* Database rows when they exist; the component falls back to the verified
-     static set when the table is empty or Supabase is not configured. */
-  const experiences: readonly ExperienceItem[] = experienceRows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    body: row.description ?? "",
-    ...(row.image_url ? { image: row.image_url } : {}),
-    ...(row.duration ? { duration: row.duration } : {}),
-    ...(row.price !== null ? { price: formatPrice(row.price) } : {}),
-  }));
+  const [heroVideo, menu] = await Promise.all([getHeroVideo(), getMenu()]);
 
   return (
     <>
@@ -77,11 +59,9 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           <CinematicSequence />
         )}
         <StorySection />
-        <Experiences items={experiences} />
+        <Experiences />
         <Menu categories={menu} />
-        <Gallery />
         <ReservationCTA />
-        <LocationSection />
       </main>
       <Footer />
     </>
