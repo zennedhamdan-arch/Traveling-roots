@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { ReservationRequestRow, ReservationStatus } from "@/lib/supabase/types";
+import { formatRestaurantDateTime } from "@/lib/time";
 
 const STATUSES: readonly ReservationStatus[] = [
   "new",
@@ -67,10 +68,9 @@ export default function ReservationList({
                     {row.party_size} {row.party_size === 1 ? "guest" : "guests"}
                   </span>
                   <span>
-                    {new Date(row.preferred_at).toLocaleString("en-GB", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {/* Restaurant-local by design: staff read the same
+                        wall-clock the guest picked, wherever this browser is. */}
+                    {formatRestaurantDateTime(row.preferred_at)}
                   </span>
                 </p>
 

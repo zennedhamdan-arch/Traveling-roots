@@ -64,7 +64,11 @@
 
 html {
   -webkit-text-size-adjust: 100%;
-  scroll-behavior: smooth;
+  /* NO scroll-behavior: smooth here. ScrollTrigger measures its homepage pins
+     by scrolling the page programmatically; global smooth scrolling animates
+     those measurement scrolls and the page visibly flies down on load. Smooth
+     anchor scrolling the user initiates is handled by components/SmoothAnchors,
+     which can tell a real click from a programmatic scroll. */
   scroll-padding-top: calc(var(--nav-height) + 1rem);
   /* `clip`, not `hidden`: it prevents sideways scroll without creating a
      scroll container, which would interfere with ScrollTrigger's pinning. */
@@ -172,10 +176,6 @@ ol {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
   *,
   *::before,
   *::after {
@@ -210,4 +210,26 @@ ol {
   height: 1px;
   border: 0;
   background: var(--tr-line);
+}
+
+/* ---------------------------------------------------------------------------
+   Anti-bot check (Cloudflare Turnstile) on the public reservation & order
+   forms. Deliberately global: the widget ships with both forms' CSS modules.
+--------------------------------------------------------------------------- */
+.captcha-slot {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0 0;
+  min-height: 140px; /* compact widget + breathing room; avoids layout shift */
+}
+
+.captcha-note {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(198, 161, 91, 0.4);
+  background: rgba(198, 161, 91, 0.08);
+  color: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }

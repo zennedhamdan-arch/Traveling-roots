@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { PickupOrderRow, ReservationRequestRow } from "@/lib/supabase/types";
+import { formatRestaurantDateTime } from "@/lib/time";
 
 /**
  * Overview.
@@ -90,8 +91,8 @@ export default async function OverviewPage(): Promise<React.JSX.Element> {
     { label: "View reservations", href: "/admin/dashboard/reservations" },
   ];
 
-  const formatWhen = (value: string): string =>
-    new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+  /** Restaurant-local (Africa/Kigali) — the same wall-clock guests picked. */
+  const formatWhen = (value: string): string => formatRestaurantDateTime(value);
 
   return (
     <>

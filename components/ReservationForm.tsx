@@ -2,16 +2,22 @@
 
 import { useMemo, useState } from "react";
 
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  restaurantLocalIsPast,
+  restaurantToday,
+} from "@/lib/time";
+import Turnstile from "./Turnstile";
 import styles from "./ReservationForm.module.css";
 
 /**
  * The public reservation form (rendered on /reservation).
  *
  * A reservation submitted here is a REQUEST, not a confirmed booking — the
- * copy says so and the dashboard says so. It inserts into reservation_requests
- * through the anon key, so Row Level Security applies: the guest may create a
- * row and may not choose its status, read it back, or write staff notes.
+ * copy says so and the dashboard says so. It posts to /api/reservations,
+ * which verifies the anti-bot token server-side and then inserts into
+ * reservation_requests through the anon key, so Row Level Security applies:
+ * the guest may create a row and may not choose its status, read it back, or
+ * write staff notes.
  *
  * Validation happens three times, on purpose:
  *   1. in the UI (min attribute, slot list) — good UX,
@@ -22,18 +28,16 @@ import styles from "./ReservationForm.module.css";
 
 type Status = "idle" | "submitting" | "done" | "error";
 
-/** Local calendar date as YYYY-MM-DD — never UTC, or guests west of Greenwich
-    would be blocked from booking "today" after their midnight. */
-function formatLocalDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+type Props = Readonly<{
+  timeSlots: readonly string[];
+  /** Public Turnstile site key, supplied by the server page. Empty = not configured. */
+  turnstileSiteKey: string;
+}>;
 
-type Props = Readonly<{ timeSlots: readonly string[] }>;
-
-export default function ReservationForm({ timeSlots }: Props): React.JSX.Element {
+export default function ReservationForm({
+  timeSlots,
+  turnstileSiteKey: siteKey,
+}: Props): React.JSX.Element {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -43,11 +47,14 @@ export default function ReservationForm({ timeSlots }: Props): React.JSX.Element
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
-  /* Computed at render, not memorised forever: "today" must be today when
-     the guest actually opens the page, including across a midnight rollover
-     while the tab sits open. */
-  const today = formatLocalDate(new Date());
+  /* All dates/times on this form are RESTAURANT-local (Africa/Kigali), no
+     matter where the guest is: a visitor in New York picking 19:00 means
+     19:00 in Musanze. "Today" is therefore today AT THE RESTAURANT — which
+     may differ from the guest's calendar either side of their midnight.
+     Recomputed every render so a tab left open rolls over correctly. */
+  const today = restaurantToday();
 
   const slots = useMemo(() => {
     if (timeSlots.length > 0) return timeSlots;
@@ -62,7 +69,10 @@ export default function ReservationForm({ timeSlots }: Props): React.JSX.Element
     phone.trim().length >= 6 &&
     date.length > 0 &&
     time.length > 0 &&
-    partySize >= 1;
+    partySize >= 1 &&
+    /* With CAPTCHA configured, no token means no submit. Without keys (e.g.
+       local dev) the server decides — and fails loudly in production. */
+    (siteKey.length === 0 || turnstileToken !== null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -72,17 +82,16 @@ export default function ReservationForm({ timeSlots }: Props): React.JSX.Element
     if (status === "submitting" || status === "done") return;
     if (!canSubmit) return;
 
-    /* Re-validate the date against TODAY at submission time — the min
-       attribute is a convenience, not a control. */
-    const now = new Date();
-    if (date < formatLocalDate(now)) {
+    /* Re-validate at submission time — the min attribute is a convenience,
+       not a control. Compared in RESTAURANT time, the frame the whole form
+       (and the database policy) operates in. */
+    if (date < today) {
       setStatus("error");
       setErrorMessage("Please choose today or a future date.");
       return;
     }
 
-    const preferredAt = new Date(`${date}T${time}`);
-    if (Number.isNaN(preferredAt.getTime()) || preferredAt.getTime() <= now.getTime()) {
+    if (restaurantLocalIsPast(date, time)) {
       setStatus("error");
       setErrorMessage(
         "That time has already passed — please choose a later time, or a future date.",
@@ -93,24 +102,39 @@ export default function ReservationForm({ timeSlots }: Props): React.JSX.Element
     setStatus("submitting");
     setErrorMessage(null);
 
+    /* The browser no longer writes to the database: the submission goes to
+       our API route, which verifies the anti-bot token server-side and
+       inserts under the same anon-role rules (RLS, column grants) that
+       always applied. */
     try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.from("reservation_requests").insert({
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim().length > 0 ? email.trim() : null,
-        party_size: partySize,
-        preferred_at: preferredAt.toISOString(),
-        notes: notes.trim().length > 0 ? notes.trim() : null,
+      const response = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim().length > 0 ? email.trim() : null,
+          party_size: partySize,
+          date,
+          time,
+          notes: notes.trim().length > 0 ? notes.trim() : null,
+          turnstileToken,
+        }),
       });
 
-      if (error) throw error;
+      const outcome = (await response.json().catch(() => null)) as
+        | { ok?: boolean; error?: string }
+        | null;
+
+      if (!response.ok || !outcome?.ok) {
+        throw new Error(outcome?.error ?? "The request could not be sent.");
+      }
       setStatus("done");
-    } catch (error) {
+    } catch (caught) {
       setStatus("error");
       setErrorMessage(
-        error instanceof Error && error.message.length > 0
-          ? error.message
+        caught instanceof Error && caught.message.length > 0
+          ? caught.message
           : "The request could not be sent.",
       );
     }
@@ -267,6 +291,8 @@ export default function ReservationForm({ timeSlots }: Props): React.JSX.Element
           {errorMessage} Please try again, or call us — the number is below the form.
         </p>
       ) : null}
+
+      {siteKey ? <Turnstile siteKey={siteKey} onToken={setTurnstileToken} /> : null}
 
       <button type="submit" className={styles.submit} disabled={!canSubmit}>
         {status === "submitting" ? "Sending…" : "Request a table"}

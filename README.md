@@ -443,6 +443,32 @@ the signed-in admin's own session, so there is one authorization path and
 
 Full setup instructions: [Setting up the admin panel](#setting-up-the-admin-panel).
 
+### Hardening (production pass)
+
+- **Admin sign-in is two-step.** Password, then a TOTP code; a password-only
+  session sees nothing (see step 5 above). Errors stay deliberately vague —
+  nothing reveals whether an email or code was the wrong half.
+- **Open redirects are closed.** The login `?next=` parameter accepts only
+  internal `/admin` paths; anything else (`https://…`, `//`, `\`, control
+  characters…) falls back to `/admin/dashboard`.
+- **Security headers** (see `next.config.ts`): a strict CSP built from the
+  sources the site actually uses — no `unsafe-eval` — plus `nosniff`,
+  `strict-origin-when-cross-origin`, `SAMEORIGIN` framing, a Permissions-Policy
+  locking out camera/mic/location/payment, COOP and HSTS. If a future feature
+  adds a source, add it to the list in `next.config.ts`; to trial a change,
+  duplicate the CSP header as `Content-Security-Policy-Report-Only`.
+- **The public forms post through `/api/reservations` and `/api/orders`**,
+  which verify the Turnstile token server-side before inserting — still under
+  the anon key, so every RLS policy, column grant and the order repricing
+  trigger apply exactly as before.
+- **Structured data is serialized safely** (`lib/jsonld.ts`): `<`, `>` and `&`
+  are escaped as Unicode escapes, so no value can ever break out of the
+  `<script type="application/ld+json">` element.
+- **All reservation and pickup times are interpreted in Africa/Kigali**
+  (`lib/time.ts`) — on the public forms, in the API routes and in the admin
+  lists — regardless of the guest's or the owner's device timezone. Stored
+  values are UTC instants; existing rows are untouched.
+
 ### The hero
 
 The 29-frame sequence has **not** been deleted. It is the fallback:
@@ -487,6 +513,16 @@ raw JPEGs are build input, not served assets.
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` (see `.env.example`). Both are safe to expose —
 the anon key is protected by RLS. Without them the site still deploys and runs;
 only `/admin` is unavailable.
+
+**Anti-bot (Cloudflare Turnstile).** `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and
+`TURNSTILE_SECRET_KEY` protect the public reservation and order forms. Create
+a *Managed* widget at dash.cloudflare.com → Turnstile to get the pair. The
+site key is public; the secret is server-only — never give it a
+`NEXT_PUBLIC_` prefix. Add both in Vercel (Production and Preview) and
+**redeploy**: the widget only renders if the site key existed at build time.
+If the secret is missing in production the forms fail loudly with a clear
+message instead of silently losing their protection — that is deliberate.
+Locally you can leave both unset; the check is skipped in development only.
 
 **Domain.** `metadataBase` and the structured data both read from
 `restaurant.website` in `data/restaurant.ts`. If you serve this on a domain
@@ -610,6 +646,18 @@ becomes a login screen.
 
 Visit **`/admin`** → you land on the login page → sign in with the owner
 email and password → the dashboard.
+
+**First sign-in asks to pair an authenticator app.** The dashboard requires
+two-step sign-in (password + a six-digit code from Google Authenticator, Authy,
+1Password, etc.): once at the first sign-in you scan a QR code, and every
+sign-in after that asks for a fresh code. A password alone — even a correct
+one — opens nothing: the session must be at AAL2 (both steps passed) before
+any admin page will render.
+
+**Lost the device?** Remove the factor in Supabase
+(**Authentication → Users → your admin → MFA factors**), then sign in again —
+you'll be offered a fresh QR code to pair a new device. Don't leave the
+account factor-less longer than the pairing takes.
 
 Day-to-day notes:
 

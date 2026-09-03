@@ -1,5 +1,6 @@
-import Navbar from "@/components/Navbar";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import Navbar from "@/components/Navbar";
+import SmoothAnchors from "@/components/SmoothAnchors";
 
 /**
  * The public site's chrome.
@@ -17,12 +18,17 @@ import FloatingWhatsApp from "@/components/FloatingWhatsApp";
  * The floating WhatsApp button is a global conversion element, so it rides
  * along here too — and on the standalone utility pages (/order, /reservation)
  * via their own layouts. Never on /admin.
+ *
+ * SmoothAnchors keeps in-page navigation gliding smoothly now that CSS
+ * scroll-behavior had to go (it animated ScrollTrigger's pin measurements
+ * into a visible load-time jump).
  */
 export default function PublicLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
   return (
     <>
+      <SmoothAnchors />
       <Navbar />
       {children}
       <FloatingWhatsApp />

@@ -1,5 +1,6 @@
 import { addressLine, restaurant } from "@/data/restaurant";
 import { seo } from "@/data/site";
+import { serializeJsonLd } from "@/lib/jsonld";
 
 /**
  * schema.org Restaurant data.
@@ -44,8 +45,10 @@ export default function StructuredData(): React.JSX.Element {
   return (
     <script
       type="application/ld+json"
-      // Static, developer-authored JSON built from typed data — no user input.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      // Serialized safely for an HTML script context (see lib/jsonld.ts):
+      // <, > and & become short-form Unicode escapes — identical JSON, inert
+      // in HTML, so no value can ever terminate the script element.
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
     />
   );
 }

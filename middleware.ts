@@ -66,12 +66,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (isLoginRoute && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin/dashboard";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
+  // NOTE: a signed-in user on /admin/login is NOT bounced to the dashboard
+  // here. "Signed in" only means AAL1 (a password); the dashboard requires
+  // AAL2 (password + TOTP). Bouncing here would ping-pong an AAL1 session
+  // between this route and the dashboard's own check, forever. The login
+  // page itself redirects fully-verified (AAL2) admins — see its getAdminUser
+  // call — which is the only session that has nothing left to prove.
 
   return response;
 }

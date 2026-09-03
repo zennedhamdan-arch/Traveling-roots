@@ -33,6 +33,7 @@ export const metadata = {
 export default async function OrderPage(): Promise<React.JSX.Element> {
   const menu = await getOrderMenu();
   const orderable = isSupabaseConfigured && menu !== null;
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
   return (
     <div className={styles.page}>
@@ -57,7 +58,7 @@ export default async function OrderPage(): Promise<React.JSX.Element> {
           </p>
 
           {orderable && menu ? (
-            <PickupOrderForm categories={menu} />
+            <PickupOrderForm categories={menu} turnstileSiteKey={turnstileSiteKey} />
           ) : (
             <div className={styles.fallback}>
               <h2 className={styles.fallbackTitle}>Online ordering is not switched on yet</h2>

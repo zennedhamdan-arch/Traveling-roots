@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { PickupOrderRow, PickupOrderStatus } from "@/lib/supabase/types";
+import { formatRestaurantDateTime } from "@/lib/time";
 
 const STATUSES: readonly PickupOrderStatus[] = [
   "new",
@@ -69,10 +70,7 @@ export default function OrderList({
                   <span>
                     {row.pickup_at === null
                       ? "ASAP"
-                      : `pickup ${new Date(row.pickup_at).toLocaleString("en-GB", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        })}`}
+                      : `pickup ${formatRestaurantDateTime(row.pickup_at)}`}
                   </span>
                 </p>
 
@@ -109,10 +107,7 @@ export default function OrderList({
                   <span className="admin-muted">
                     {" "}
                     · placed{" "}
-                    {new Date(row.created_at).toLocaleString("en-GB", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {formatRestaurantDateTime(row.created_at)}
                   </span>
                 </p>
 

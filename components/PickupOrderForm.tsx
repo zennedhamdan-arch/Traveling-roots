@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import Turnstile from "./Turnstile";
 import type { PickupOrderDraftLine } from "@/lib/supabase/types";
 import type { OrderableCategory, OrderableItem } from "@/lib/content";
 import styles from "./PickupOrderForm.module.css";
@@ -32,9 +32,16 @@ const selectionKey = (itemId: string, variantLabel: string | null): string =>
 
 const rwf = (amount: number): string => `${amount.toLocaleString("en-US")} RWF`;
 
-type Props = Readonly<{ categories: readonly OrderableCategory[] }>;
+type Props = Readonly<{
+  categories: readonly OrderableCategory[];
+  /** Public Turnstile site key, supplied by the server page. Empty = not configured. */
+  turnstileSiteKey: string;
+}>;
 
-export default function PickupOrderForm({ categories }: Props): React.JSX.Element {
+export default function PickupOrderForm({
+  categories,
+  turnstileSiteKey: siteKey,
+}: Props): React.JSX.Element {
   const [activeCategory, setActiveCategory] = useState<string>(categories[0]?.slug ?? "");
   const [query, setQuery] = useState("");
   const [selections, setSelections] = useState<readonly Selection[]>([]);
@@ -44,6 +51,7 @@ export default function PickupOrderForm({ categories }: Props): React.JSX.Elemen
   const [pickupAt, setPickupAt] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   /* Search spans every category; when active it replaces the category view. */
   const searching = query.trim().length > 0;
@@ -114,7 +122,8 @@ export default function PickupOrderForm({ categories }: Props): React.JSX.Elemen
     status !== "submitting" &&
     selections.length > 0 &&
     name.trim().length > 0 &&
-    phone.trim().length >= 6;
+    phone.trim().length >= 6 &&
+    (siteKey.length === 0 || turnstileToken !== null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -129,17 +138,31 @@ export default function PickupOrderForm({ categories }: Props): React.JSX.Elemen
       ...(s.variantLabel ? { variant_label: s.variantLabel } : {}),
     }));
 
+    /* Via our API route: the anti-bot token is verified server-side, the
+       database still reprices everything, and the pickup time is interpreted
+       as restaurant-local (Africa/Kigali) on the server — never the
+       browser's zone. */
     try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.from("pickup_orders").insert({
-        customer_name: name.trim(),
-        phone: phone.trim(),
-        note: note.trim().length > 0 ? note.trim() : null,
-        pickup_at: pickupAt ? new Date(pickupAt).toISOString() : null,
-        items: lines,
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_name: name.trim(),
+          phone: phone.trim(),
+          note: note.trim().length > 0 ? note.trim() : null,
+          pickup_at: pickupAt || null,
+          items: lines,
+          turnstileToken,
+        }),
       });
 
-      if (error) throw error;
+      const outcome = (await response.json().catch(() => null)) as
+        | { ok?: boolean; error?: string }
+        | null;
+
+      if (!response.ok || !outcome?.ok) {
+        throw new Error(outcome?.error ?? "The order could not be sent.");
+      }
       setStatus("done");
     } catch (error) {
       setStatus("error");
@@ -304,6 +327,8 @@ export default function PickupOrderForm({ categories }: Props): React.JSX.Elemen
             {errorMessage} You can also order by phone — the number is at the bottom of the page.
           </p>
         ) : null}
+
+        {siteKey ? <Turnstile siteKey={siteKey} onToken={setTurnstileToken} /> : null}
 
         <button type="submit" className={styles.submit} disabled={!canSubmit}>
           {status === "submitting" ? "Sending…" : "Send order"}

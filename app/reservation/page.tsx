@@ -29,6 +29,11 @@ export default async function ReservationPage(): Promise<React.JSX.Element> {
   const restaurant = await getRestaurant();
   const formEnabled = isSupabaseConfigured;
 
+  /* Read on the server, passed down as a prop: process.env.NEXT_PUBLIC_* is
+     deterministic here, and this way the widget is part of the server-rendered
+     HTML instead of depending on how the bundler treats client-side env reads. */
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+
   /* Real opening hours (database override or verified defaults), turned into
      bookable half-hour slots. Guests can only pick times we are open. */
   const hours = restaurant.hours[0];
@@ -60,7 +65,7 @@ export default async function ReservationPage(): Promise<React.JSX.Element> {
           </p>
 
           {formEnabled ? (
-            <ReservationForm timeSlots={timeSlots} />
+            <ReservationForm timeSlots={timeSlots} turnstileSiteKey={turnstileSiteKey} />
           ) : (
             <div className={styles.fallback}>
               <h2 className={styles.fallbackTitle}>Online booking is not switched on yet</h2>
