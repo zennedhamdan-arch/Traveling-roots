@@ -235,16 +235,22 @@ used as the primary menu experience.
 
 ```
 app/
-  layout.tsx              Metadata, fonts, nav, JSON-LD
-  page.tsx                Server component; only the sequence is client-side
+  layout.tsx              Root: metadata, fonts, JSON-LD — no navbar (it must
+                          never appear over /admin)
+  (public)/               Route group: everything the public sees
+    layout.tsx            Renders the Navbar (fixed-position, public only)
+    page.tsx              Server component; only the sequence is client-side
+    order/                Public pickup-order page
+    (legal)/privacy|terms Factual legal pages
+  admin/                  Dashboard (own layout, own CSS, no public chrome)
   globals.css             Design tokens + reset
-  (legal)/privacy|terms   Factual legal pages
 
 components/
   CinematicSequence.tsx   ← all animation logic lives here
   Navbar.tsx  StorySection.tsx  Experiences.tsx
   Menu.tsx  MenuCategory.tsx  MenuItem.tsx
   ReservationCTA.tsx  Footer.tsx  BrandMark.tsx  Button.tsx
+  PickupOrderForm.tsx  HeroVideo.tsx
   StructuredData.tsx
 
 data/
@@ -257,6 +263,8 @@ lib/
   sequence.ts             Frame URLs + every tuning constant
   sequenceLoader.ts       Preloading, progress, failure fallback
   actions.ts              CTAs derived from verified contact data
+  content.ts              Content loaders: Supabase with data/ fallback
+  upload.ts               Storage uploads (resumable above 6 MB)
   useMediaQuery.ts        Motion preference, SSR-safe
 
 public/sequence/          frame-01.webp … frame-29.webp
@@ -498,15 +506,32 @@ no redeploy.
 
 | Dashboard tab | What you can do |
 | --- | --- |
-| **Overview** | Counts at a glance: menu items, categories, new/all pickup orders, new/all reservation requests |
+The dashboard navigation is a grouped sidebar on desktop and a hamburger drawer on phones: **Dashboard** (Overview), **Website** (Hero video, Menu, Experiences, Gallery, Offers, Testimonials), **Business** (Business info), **Customers** (Reservations, Pickup orders), **System** (Sign out).
+
+| Page | What you can do |
+| --- | --- |
+| **Overview** | Counts (menu items, categories, gallery photos, experiences, active offers, new/all reservations, new/all pickup orders), recent reservations and orders, quick actions |
+| **Hero video** | Upload a video that replaces the 29-frame scroll sequence; deactivate it to go back to the frames |
 | **Menu** | Edit any item's name, price (RWF), description and variants; publish or hide items and whole categories |
-| **Hero** | Upload a video that replaces the 29-frame scroll sequence; deactivate it to go back to the frames |
+| **Experiences** | Add, edit, photograph, reorder, hide or delete the public experiences cards (duration and price optional) |
+| **Gallery** | Upload photos (JPG/PNG/WebP/AVIF, up to 10 MB) with captions and alt text, reorder them, hide them or delete them — no extra SQL to run, the table and storage bucket are part of the standard setup |
+| **Offers / Testimonials** | Manage specials and guest quotes (add, edit, activate/publish, delete) |
+| **Business info** | Name, phone, WhatsApp, email, address, directions URL, opening hours, social links — and the floating WhatsApp button (on/off + pre-filled message) — consumed live by the public site |
 | **Pickup orders** | Orders submitted from the public **`/order`** page; call or WhatsApp the guest to confirm, then move the order through `new → accepted → preparing → ready → completed / cancelled` |
-| **Reservations** | Read every reservation request; filter by status and move them through `new → contacted → confirmed / declined / archived` |
+| **Reservations** | Read every reservation request (form or phone); filter by status and move them through `new → contacted → confirmed / declined / archived` |
 
 Everything the database stores is also editable directly in Supabase's table
-editor (business info, experiences, offers, testimonials, social links,
-gallery) — those just don't have dedicated dashboard UI yet.
+editor (business info, experiences, offers, testimonials, social links) —
+those just don't have dedicated dashboard UI yet.
+
+**Reservations & the public site.** The reserve section now offers both the
+fast path (call / WhatsApp) and, when Supabase is configured, a request form
+(name, phone, date, time, guests) that writes straight into
+`reservation_requests` — subject to the same RLS as everything else. The
+public site also has a gallery section (admin-managed photos, lightbox with
+keyboard and swipe), a location section with the restaurant's own Google Maps
+embed and directions/call/WhatsApp buttons, DB-driven experiences with the
+verified set as fallback, and a fuller footer.
 
 **How online ordering works.** The public `/order` page (linked from the nav
 and the reservation section) lists the live menu with quantity steppers; the
@@ -536,7 +561,8 @@ contents of each file below, press **Run**, and repeat — **in this order**:
 | 2 | `supabase/migrations/0002_rls.sql` | Row Level Security — who may read/write what |
 | 3 | `supabase/migrations/0003_storage.sql` | The `hero-videos` storage bucket and its policies |
 | 4 | `supabase/migrations/0004_pickup_orders.sql` | The pickup-order table, its pricing trigger and policies |
-| 5 | `supabase/seed.sql` | The real menu, business info and social links |
+| 5 | `supabase/migrations/0005_whatsapp_floating.sql` | Floating WhatsApp button settings (on/off, pre-filled message) |
+| 6 | `supabase/seed.sql` | The real menu, business info and social links |
 
 `seed.sql` is idempotent — running it twice does not duplicate anything.
 
@@ -601,7 +627,7 @@ Day-to-day notes:
 npm run db:test
 ```
 
-58 checks against an in-process Postgres using these exact migration files:
+66 checks against an in-process Postgres using these exact migration files:
 an anonymous visitor cannot read the reservation list or the order list,
 cannot self-approve a booking, cannot accept their own order, cannot set
 their own price and cannot see unpublished content; a signed-up non-admin

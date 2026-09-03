@@ -3,7 +3,6 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { restaurant, locationLabel } from "@/data/restaurant";
 import { seo } from "@/data/site";
-import Navbar from "@/components/Navbar";
 import StructuredData from "@/components/StructuredData";
 
 export const metadata: Metadata = {
@@ -54,7 +53,6 @@ export default function RootLayout({
         <a href="#main" className="skipLink">
           Skip to content
         </a>
-        <Navbar />
         {children}
         <StructuredData />
       </body>

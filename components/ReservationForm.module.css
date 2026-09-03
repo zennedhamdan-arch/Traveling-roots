@@ -1,0 +1,235 @@
+/* Reservation form — calm card on the dark reservation band. */
+
+.form {
+  width: 100%;
+  max-width: 44rem;
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid var(--tr-line-dark);
+  border-radius: var(--radius-md);
+  background: rgba(14, 26, 19, 0.55);
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+@media (max-width: 560px) {
+  .rows {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tr-sand);
+  font-weight: 600;
+}
+
+.input,
+.textarea {
+  font: inherit;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--tr-line-dark);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--tr-text);
+  min-width: 0;
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.input:focus-visible,
+.textarea:focus-visible {
+  outline: 2px solid var(--tr-gold);
+  outline-offset: 1px;
+}
+
+.submit {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.85rem 1.6rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--tr-gold);
+  color: var(--tr-ink);
+  cursor: pointer;
+  justify-self: start;
+  transition: filter var(--dur) var(--ease-out);
+}
+
+.submit:hover:not(:disabled),
+.submit:focus-visible:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.submit:focus-visible {
+  outline: 2px solid var(--tr-cream);
+  outline-offset: 2px;
+}
+
+.submit:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.finePrint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--tr-sand);
+}
+
+.error {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: rgba(181, 100, 60, 0.25);
+  border: 1px solid var(--tr-clay);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+/* --- success ------------------------------------------------------------------ */
+
+.done {
+  width: 100%;
+  max-width: 44rem;
+  margin: 0 auto;
+  display: grid;
+  gap: 0.7rem;
+  justify-items: center;
+  text-align: center;
+  padding: clamp(1.75rem, 5vw, 3rem);
+  border: 1px solid var(--tr-line-dark);
+  border-radius: var(--radius-md);
+  background: rgba(14, 26, 19, 0.55);
+}
+
+.doneMark {
+  margin: 0;
+  width: 3rem;
+  height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--tr-moss);
+  color: var(--tr-cream);
+  font-size: 1.4rem;
+}
+
+.doneTitle {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.8rem;
+  margin: 0;
+  color: var(--tr-cream);
+}
+
+.doneBody {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--tr-sand);
+  line-height: 1.6;
+}
+
+/* --- guest stepper ------------------------------------------------------------ */
+
+/* Three joined-feeling boxes with a hairline gap: exact ±1, display-only
+   value, thumb-sized targets. Matches the form's light fields on the dark
+   card, so it reads as one family with the inputs. */
+
+.stepper {
+  display: flex;
+  gap: 0.3rem;
+  align-items: stretch;
+}
+
+.stepButton {
+  flex: 0 0 auto;
+  width: 3rem;
+  height: 3rem; /* 48px touch target */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--tr-ink);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--tr-line-dark);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out),
+    transform 0.1s ease;
+}
+
+.stepButton:hover:not(:disabled),
+.stepButton:focus-visible:not(:disabled) {
+  background: var(--tr-gold);
+  border-color: var(--tr-gold);
+}
+
+/* Pressed state: a physical little dip. */
+.stepButton:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: brightness(0.96);
+}
+
+.stepButton:focus-visible {
+  outline: 2px solid var(--tr-gold);
+  outline-offset: 2px;
+}
+
+.stepButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stepValue {
+  flex: 1 1 auto;
+  min-width: 3.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.6rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tr-text);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--tr-line-dark);
+  border-radius: var(--radius-sm);
+}
+
+.stepHint {
+  font-size: 0.78rem;
+  color: var(--tr-sand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stepButton {
+    transition: none;
+  }
+
+  .stepButton:active:not(:disabled) {
+    transform: none;
+  }
+}

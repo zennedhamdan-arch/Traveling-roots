@@ -73,3 +73,42 @@
     padding-right: 0;
   }
 }
+
+/* --- optional imagery / meta (shown only when the admin sets them) ----------- */
+
+.cardImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+}
+
+/* A card with a photo becomes a framed tile; without one it stays the
+   original airy text card. :has() is supported by every current browser. */
+.card:has(.cardImage) {
+  padding: 0;
+  overflow: hidden;
+}
+
+.cardContent {
+  padding: clamp(1.4rem, 3.5vw, 2rem);
+}
+
+.card:has(.cardImage) .cardContent {
+  padding: 1.15rem 1.35rem 1.35rem;
+}
+
+.cardText {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 0.97rem;
+  color: var(--tr-stone);
+}
+
+.cardMeta {
+  margin: 0.8rem 0 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--tr-gold);
+  font-weight: 600;
+}

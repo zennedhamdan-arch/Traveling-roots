@@ -151,6 +151,7 @@ async function main() {
     "0002_rls.sql",
     "0003_storage.sql",
     "0004_pickup_orders.sql",
+    "0005_whatsapp_floating.sql",
   ]) {
     const sql = await read(path.join("supabase", "migrations", file));
     // pgcrypto ships with Supabase; PGlite has gen_random_uuid() in core.
@@ -436,6 +437,62 @@ async function main() {
   );
 
   /* ------------------------------------------------------------------ */
+  console.log("\nFloating WhatsApp button settings");
+  /* ------------------------------------------------------------------ */
+
+  {
+    const row = await db.query(
+      `select whatsapp_floating_enabled, whatsapp_default_message
+       from public.site_settings where id = 1`,
+    );
+    check("settings row exists with floating enabled by default",
+      row.rows.length === 1 && row.rows[0].whatsapp_floating_enabled === true,
+      JSON.stringify(row.rows[0]));
+  }
+
+  await as(db, "anon", null, async () => {
+    const row = await db.query(
+      "select whatsapp_floating_enabled from public.site_settings where id = 1",
+    );
+    check("the public can read the button setting", row.rows.length === 1);
+  });
+
+  await changesNothing(
+    db,
+    "CANNOT hide the WhatsApp button (non-admin)",
+    () =>
+      as(db, "authenticated", INTRUDER, () =>
+        db.query(
+          "update public.site_settings set whatsapp_floating_enabled = false where id = 1",
+        ),
+      ),
+    async () => {
+      const r = await db.query(
+        "select whatsapp_floating_enabled from public.site_settings where id = 1",
+      );
+      return r.rows[0].whatsapp_floating_enabled === true;
+    },
+  );
+
+  await as(db, "authenticated", ADMIN, async () => {
+    await db.query(
+      `update public.site_settings
+       set whatsapp_default_message = 'Karibu!', whatsapp_floating_enabled = false
+       where id = 1`,
+    );
+    const r = await db.query(
+      "select whatsapp_default_message, whatsapp_floating_enabled from public.site_settings where id = 1",
+    );
+    check("admin can configure the button",
+      r.rows[0].whatsapp_default_message === "Karibu!" &&
+        r.rows[0].whatsapp_floating_enabled === false);
+    // Restore the shipped default for any later checks.
+    await db.query(
+      "update public.site_settings set whatsapp_floating_enabled = true where id = 1",
+    );
+  });
+
+  /* ------------------------------------------------------------------ */
   console.log("\nSigned-up user who is NOT an admin");
   /* ------------------------------------------------------------------ */
   // This is the case the Bar Mubiti model got wrong: authentication treated as
@@ -487,9 +544,19 @@ async function main() {
     () =>
       as(db, "authenticated", INTRUDER, () => db.query("delete from public.testimonials")),
   );
+  await changesNothing(
+    db,
+    "CANNOT delete gallery photos",
+    () => as(db, "authenticated", INTRUDER, () => db.query("delete from public.gallery_items")),
+  );
   await denied(db, "CANNOT upload to storage", () =>
     as(db, "authenticated", INTRUDER, () =>
       db.query(`insert into storage.objects (bucket_id, name) values ('hero', 'x.mp4')`),
+    ),
+  );
+  await denied(db, "CANNOT upload gallery photos", () =>
+    as(db, "anon", null, () =>
+      db.query(`insert into storage.objects (bucket_id, name) values ('gallery', 'x.jpg')`),
     ),
   );
 
@@ -558,6 +625,9 @@ async function main() {
     await db.query(`insert into storage.objects (bucket_id, name) values ('hero', 'v.mp4')`);
     check("can upload to storage", true);
 
+    await db.query(`insert into storage.objects (bucket_id, name) values ('gallery', 'p.jpg')`);
+    check("can upload to the gallery bucket", true);
+
     const hidden = await db.query(
       "select count(*) as n from public.testimonials",
     );
@@ -572,6 +642,8 @@ async function main() {
     insert into public.testimonials (author, quote, published)
       values ('Draft Author', 'unapproved quote', false);
     insert into public.experiences (title, active) values ('Secret event', false);
+    insert into public.gallery_items (image_url, alt_text, published)
+      values ('https://example.com/draft.jpg', 'an unpublished photo', false);
     update public.menu_categories set published = false where slug = 'desserts';
   `);
 
@@ -581,6 +653,9 @@ async function main() {
 
     const e = await db.query("select count(*) as n from public.experiences");
     check("inactive experience not readable", Number(e.rows[0].n) === 0, `saw ${e.rows[0].n}`);
+
+    const g = await db.query("select count(*) as n from public.gallery_items");
+    check("unpublished gallery photo not readable", Number(g.rows[0].n) === 0, `saw ${g.rows[0].n}`);
 
     const d = await db.query(`
       select count(*) as n from public.menu_items i

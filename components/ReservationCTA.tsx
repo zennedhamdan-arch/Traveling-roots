@@ -5,8 +5,12 @@ import ButtonLink from "./Button";
 import styles from "./ReservationCTA.module.css";
 
 /**
- * The conversion moment. Deliberately simple: one headline, two decisions.
- * No fake booking form — reservations really are taken by phone and WhatsApp.
+ * The conversion moment — and now a funnel, not a form.
+ *
+ * Every "Reserve a Table" button on the site (navbar, this section, the
+ * footer) leads to the dedicated /reservation page, where the actual form
+ * lives. Call and WhatsApp stay right here for guests who would rather talk
+ * — but "Reserve" itself never dials a phone or scrolls to the footer.
  */
 export default function ReservationCTA(): React.JSX.Element {
   const hours = restaurant.hours[0];
