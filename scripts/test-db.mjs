@@ -152,6 +152,7 @@ async function main() {
     "0003_storage.sql",
     "0004_pickup_orders.sql",
     "0005_whatsapp_floating.sql",
+    "0006_gallery_featured.sql",
   ]) {
     const sql = await read(path.join("supabase", "migrations", file));
     // pgcrypto ships with Supabase; PGlite has gen_random_uuid() in core.
@@ -559,6 +560,18 @@ async function main() {
       db.query(`insert into storage.objects (bucket_id, name) values ('gallery', 'x.jpg')`),
     ),
   );
+  await changesNothing(
+    db,
+    "CANNOT mark gallery photos featured",
+    () => as(db, "anon", null, () => db.query("update public.gallery_items set featured = true")),
+  );
+  await changesNothing(
+    db,
+    "CANNOT recategorize gallery photos",
+    () =>
+      as(db, "anon", null, () =>
+        db.query("update public.gallery_items set category = 'Events'")),
+  );
 
   await as(db, "authenticated", INTRUDER, async () => {
     const rows = await db.query("select count(*) as n from public.reservation_requests");
@@ -644,6 +657,10 @@ async function main() {
     insert into public.experiences (title, active) values ('Secret event', false);
     insert into public.gallery_items (image_url, alt_text, published)
       values ('https://example.com/draft.jpg', 'an unpublished photo', false);
+    insert into public.gallery_items (image_url, alt_text, published, featured, category)
+      values ('https://example.com/showcase.jpg', 'a featured garden photo', true, true, 'Garden');
+    insert into public.gallery_items (image_url, alt_text, published, featured)
+      values ('https://example.com/plain.jpg', 'a plain published photo', true, false);
     update public.menu_categories set published = false where slug = 'desserts';
   `);
 
@@ -654,8 +671,15 @@ async function main() {
     const e = await db.query("select count(*) as n from public.experiences");
     check("inactive experience not readable", Number(e.rows[0].n) === 0, `saw ${e.rows[0].n}`);
 
-    const g = await db.query("select count(*) as n from public.gallery_items");
+    const g = await db.query(
+      "select count(*) as n from public.gallery_items where not published",
+    );
     check("unpublished gallery photo not readable", Number(g.rows[0].n) === 0, `saw ${g.rows[0].n}`);
+
+    const f = await db.query(
+      "select count(*) as n from public.gallery_items where featured and published",
+    );
+    check("featured gallery photo readable", Number(f.rows[0].n) === 1, `saw ${f.rows[0].n}`);
 
     const d = await db.query(`
       select count(*) as n from public.menu_items i
@@ -665,6 +689,37 @@ async function main() {
     `);
     check("items in an unpublished category are hidden too", Number(d.rows[0].n) === 0,
       `saw ${d.rows[0].n}`);
+  });
+
+  /* ------------------------------------------------------------------ */
+  console.log("\nGallery curation (featured + category)");
+  /* ------------------------------------------------------------------ */
+
+  await as(db, "authenticated", ADMIN, async () => {
+    await db.query(
+      `update public.gallery_items set featured = true, category = 'Food'
+       where image_url = 'https://example.com/plain.jpg'`,
+    );
+    const curated = await db.query(
+      "select featured, category from public.gallery_items where image_url = 'https://example.com/plain.jpg'",
+    );
+    check(
+      "admin can feature and categorize gallery photos",
+      curated.rows[0]?.featured === true && curated.rows[0]?.category === "Food",
+    );
+  });
+
+  /* The homepage showcase contract, verified as the public role: exactly the
+     published AND featured rows, in display order. */
+  await as(db, "anon", null, async () => {
+    const homepage = await db.query(
+      "select image_url from public.gallery_items where published and featured order by sort_order",
+    );
+    check(
+      "homepage showcase sees only published featured photos",
+      homepage.rows.length === 2 &&
+        homepage.rows.every((r) => typeof r.image_url === "string"),
+    );
   });
 
   await db.exec(`update public.menu_categories set published = true where slug = 'desserts';`);
@@ -703,6 +758,21 @@ async function main() {
     rlsOff.rows.length === 0,
     rlsOff.rows.map((r) => r.relname).join(", "),
   );
+
+  {
+    // Gallery categories are a fixed set (migration 0006's check constraint):
+    // "Bogus" must be rejected by the database itself, not just the admin UI.
+    let badCategory = false;
+    try {
+      await db.query(
+        `insert into public.gallery_items (image_url, alt_text, published, category)
+         values ('https://example.com/bogus.jpg', 'x', true, 'Bogus')`,
+      );
+    } catch {
+      badCategory = true;
+    }
+    check("gallery category restricted to the allowed set", badCategory);
+  }
 
   {
     // The stored total must equal the sum of the snapshotted lines — the

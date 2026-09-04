@@ -410,6 +410,32 @@ export const getGalleryItems = cache(() => selectAll<GalleryItemRow>("gallery_it
 export const getOffers = cache(() => selectAll<OfferRow>("offers"));
 export const getTestimonials = cache(() => selectAll<TestimonialRow>("testimonials"));
 
+/**
+ * The homepage showcase: published AND featured, in display order, capped.
+ *
+ * RLS already limits the public client to published rows — the extra
+ * `.eq("published", true)` documents the contract and keeps the query honest
+ * even if the policy ever changes shape. Kept separate from `selectAll` so
+ * the homepage never pulls the whole collection's metadata, let alone images.
+ */
+export const getFeaturedGallery = cache(async (limit: number): Promise<GalleryItemRow[]> => {
+  if (!isSupabaseConfigured) return [];
+  try {
+    const supabase = createSupabasePublicClient();
+    if (!supabase) return [];
+    const { data } = await supabase
+      .from("gallery_items")
+      .select("*")
+      .eq("published", true)
+      .eq("featured", true)
+      .order("sort_order")
+      .limit(limit);
+    return (data ?? []) as GalleryItemRow[];
+  } catch {
+    return [];
+  }
+});
+
 /* -------------------------------------------------------------------------- */
 /* Floating WhatsApp button                                                    */
 /* -------------------------------------------------------------------------- */

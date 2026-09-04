@@ -533,7 +533,7 @@ canonical URLs and JSON-LD stay correct.
 
 ## Setting up the admin panel
 
-End to end: a Supabase project, four SQL files, one allow-listed account, two
+End to end: a Supabase project, six SQL files, one allow-listed account, two
 environment variables. About ten minutes. After this you can edit the menu,
 change the hero video and manage reservation requests from `/admin` — no code,
 no redeploy.
@@ -550,7 +550,7 @@ The dashboard navigation is a grouped sidebar on desktop and a hamburger drawer 
 | **Hero video** | Upload a video that replaces the 29-frame scroll sequence; deactivate it to go back to the frames |
 | **Menu** | Edit any item's name, price (RWF), description and variants; publish or hide items and whole categories |
 | **Experiences** | Add, edit, photograph, reorder, hide or delete the public experiences cards (duration and price optional) |
-| **Gallery** | Upload photos (JPG/PNG/WebP/AVIF, up to 10 MB) with captions and alt text, reorder them, hide them or delete them — no extra SQL to run, the table and storage bucket are part of the standard setup |
+| **Gallery** | Upload photos (JPG/PNG/WebP/AVIF, up to 10 MB) with captions, alt text and a category (Food / Restaurant / Garden / Events / Atmosphere), reorder them, hide them or delete them. Mark up to 8 photos **Featured** — those drift through the homepage showcase; everything published appears on the **`/gallery`** page |
 | **Offers / Testimonials** | Manage specials and guest quotes (add, edit, activate/publish, delete) |
 | **Business info** | Name, phone, WhatsApp, email, address, directions URL, opening hours, social links — and the floating WhatsApp button (on/off + pre-filled message) — consumed live by the public site |
 | **Pickup orders** | Orders submitted from the public **`/order`** page; call or WhatsApp the guest to confirm, then move the order through `new → accepted → preparing → ready → completed / cancelled` |
@@ -598,6 +598,7 @@ contents of each file below, press **Run**, and repeat — **in this order**:
 | 3 | `supabase/migrations/0003_storage.sql` | The `hero-videos` storage bucket and its policies |
 | 4 | `supabase/migrations/0004_pickup_orders.sql` | The pickup-order table, its pricing trigger and policies |
 | 5 | `supabase/migrations/0005_whatsapp_floating.sql` | Floating WhatsApp button settings (on/off, pre-filled message) |
+| 6 | `supabase/migrations/0006_gallery_featured.sql` | Gallery curation: `featured` + `category` columns on `gallery_items` (homepage showcase) — no policy changes |
 | 6 | `supabase/seed.sql` | The real menu, business info and social links |
 
 `seed.sql` is idempotent — running it twice does not duplicate anything.

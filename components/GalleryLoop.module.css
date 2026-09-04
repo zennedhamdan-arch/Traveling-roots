@@ -1,0 +1,164 @@
+/* Homepage gallery showcase: the slow horizontal drift. The shared lightbox
+   keeps its styles in GalleryGrid.module.css. */
+
+/* The window: clips the track, fades the edges into the section background.
+   `clip`, not `hidden`, so no scrollbar is ever reserved. */
+.shell {
+  position: relative;
+  overflow-x: clip;
+  /* Room for the card's hover lift, which must never be clipped. */
+  padding-block: 0.4rem;
+}
+
+.shell::before,
+.shell::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: clamp(1rem, 4vw, 3.5rem);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.shell::before {
+  left: 0;
+  background: linear-gradient(to right, var(--tr-forest), transparent);
+}
+
+.shell::after {
+  right: 0;
+  background: linear-gradient(to left, var(--tr-forest), transparent);
+}
+
+/* --- the moving track ------------------------------------------------------- */
+
+.track {
+  display: flex;
+  align-items: stretch;
+  /* Exactly two halves; margins (not gap) between slides keep one half an
+     exact half of the track, which is what makes -50% seamless. */
+  width: max-content;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  /* ~26s per photo: with ~300px cards that is roughly 12px/s — a slow,
+     cinematic drift. `--loop-count` (one half's photo count) keeps the speed
+     constant for any number of photos. */
+  animation: gallery-drift calc(var(--loop-count) * 26s) linear infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+@keyframes gallery-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* Pause for studying and clicking. Hover only applies on devices with a real
+   hover pointer — a finger's "hover" must not pause the drift semi-permanently
+   (and a tap opens the lightbox anyway). Keyboard focus pauses too. */
+@media (hover: hover) {
+  .shell:hover .track {
+    animation-play-state: paused;
+  }
+}
+
+.shell:focus-within .track {
+  animation-play-state: paused;
+}
+
+/* --- the static presentation (few photos, or reduced motion) ---------------- */
+
+.track.row,
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
+}
+
+.row .slide {
+  margin: 0; /* the static row uses the flex gap, not the track margin */
+}
+
+/* --- a slide ---------------------------------------------------------------- */
+
+.slide {
+  flex: 0 0 auto;
+  margin-inline-end: 0.9rem; /* spacing inside the track, exact-half safe */
+}
+
+.card {
+  position: relative;
+  display: block;
+  width: clamp(220px, 26vw, 340px);
+  aspect-ratio: 3 / 2;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--tr-line-dark);
+  border-radius: var(--radius-md);
+  background: var(--tr-ink);
+  cursor: zoom-in;
+  transition: transform var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+}
+
+.card:hover,
+.card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--tr-gold);
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.caption {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding: 1.6rem 0.8rem 0.6rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  color: var(--tr-cream);
+  background: linear-gradient(to top, rgba(10, 22, 16, 0.85), transparent);
+  text-align: left;
+  pointer-events: none;
+}
+
+/* --- reduced motion: calm means still --------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    animation: none;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.9rem;
+  }
+
+  .track .slide {
+    margin: 0; /* spacing via the row gap, like the static presentation */
+  }
+
+  .card {
+    transition: none;
+  }
+
+  .card:hover,
+  .card:focus-visible {
+    transform: none;
+  }
+}

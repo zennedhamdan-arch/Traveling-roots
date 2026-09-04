@@ -1,27 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
+import GalleryLightbox, { type GalleryPhoto } from "./GalleryLightbox";
 import styles from "./GalleryGrid.module.css";
 
 /**
- * The gallery grid + lightbox. One client component because the two share
- * state: tapping a photo opens the lightbox at that photo.
+ * The full gallery grid (masonry via CSS columns) with the shared lightbox
+ * and, when photos carry categories, a quiet filter row — at a hundred
+ * photos, "just the food" should be one tap.
  *
- * Accessibility is not optional here:
- *  - every photo is a <button> with a real label (its alt text)
- *  - the lightbox is a role="dialog" aria-modal, closes on Escape, arrows
- *    move between photos, focus starts on the close button and returns to
- *    the photo that opened it
- *  - swipe works on touch, and the grid never causes horizontal scroll
+ * Accessibility is not optional here: every photo is a <button> with a real
+ * label (its alt text), the filter buttons announce their state, and the
+ * grid never causes horizontal scroll.
  */
 
-export type GalleryPhoto = Readonly<{
-  id: string;
-  src: string;
-  alt: string;
-  caption?: string;
-}>;
+export type { GalleryPhoto };
 
 type Props = Readonly<{
   items: readonly GalleryPhoto[];
@@ -30,54 +24,43 @@ type Props = Readonly<{
 
 export default function GalleryGrid({ items, emptyMessage }: Props): React.JSX.Element {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const openerRef = useRef<HTMLButtonElement | null>(null);
-  const closeRef = useRef<HTMLButtonElement | null>(null);
+
+  /* Categories in order of first appearance — the owner's ordering, not the
+     alphabet's. Shown only when there are at least two to filter between. */
+  const categories = useMemo(() => {
+    const seen: string[] = [];
+    for (const item of items) {
+      if (item.category && !seen.includes(item.category)) seen.push(item.category);
+    }
+    return seen;
+  }, [items]);
+
+  const visible = useMemo(
+    () => (activeCategory === null ? items : items.filter((i) => i.category === activeCategory)),
+    [items, activeCategory],
+  );
 
   const close = useCallback(() => {
     setOpenIndex(null);
   }, []);
 
+  /* The lightbox pages through the filtered list, not the whole collection:
+     arrows should walk what the visitor is looking at. */
   const show = useCallback(
     (index: number) => {
-      setOpenIndex(((index % items.length) + items.length) % items.length);
+      setOpenIndex(((index % visible.length) + visible.length) % visible.length);
     },
-    [items.length],
+    [visible.length],
   );
 
-  /* Keyboard + scroll lock while the lightbox is open. */
-  useEffect(() => {
-    if (openIndex === null) return;
-
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") close();
-      if (event.key === "ArrowRight") show(openIndex + 1);
-      if (event.key === "ArrowLeft") show(openIndex - 1);
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      // Hand focus back to the photo that opened the lightbox.
-      openerRef.current?.focus();
-    };
-  }, [openIndex, close, show]);
-
-  /* Swipe (touch). A tap is not a swipe: require ~40px of horizontal travel. */
-  const touchStart = useRef<number | null>(null);
-  const onTouchStart = (event: React.TouchEvent): void => {
-    touchStart.current = event.touches[0]?.clientX ?? null;
-  };
-  const onTouchEnd = (event: React.TouchEvent): void => {
-    if (touchStart.current === null || openIndex === null) return;
-    const delta = (event.changedTouches[0]?.clientX ?? 0) - touchStart.current;
-    if (Math.abs(delta) > 40) show(openIndex + (delta < 0 ? 1 : -1));
-    touchStart.current = null;
-  };
+  /* A filter change while the lightbox is open would leave a stale index;
+     close it — the visitor re-opens from the newly filtered grid. */
+  const chooseCategory = useCallback((category: string | null) => {
+    setOpenIndex(null);
+    setActiveCategory(category);
+  }, []);
 
   if (items.length === 0) {
     return (
@@ -87,91 +70,74 @@ export default function GalleryGrid({ items, emptyMessage }: Props): React.JSX.E
     );
   }
 
-  const current = openIndex !== null ? items[openIndex] : null;
-
   return (
     <>
-      <ul className={styles.grid}>
-        {items.map((item, index) => (
-          <li key={item.id} className={styles.cell}>
-            <button
-              type="button"
-              className={styles.photoButton}
-              onClick={() => {
-                openerRef.current = null;
-                show(index);
-              }}
-              ref={index === 0 ? openerRef : undefined}
-              aria-label={`Open photo: ${item.alt}`}
-            >
-              {/* Admin-uploaded photos on Supabase's CDN; next/image would need
-                remotePatterns config and buy nothing on a masonry grid. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-                className={styles.photo}
-                src={item.src}
-                alt={item.alt}
-                loading="lazy"
-                decoding="async"
-              />
-              {item.caption ? <span className={styles.photoCaption}>{item.caption}</span> : null}
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {current && openIndex !== null ? (
-        <div
-          className={styles.lightbox}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Photo ${openIndex + 1} of ${items.length}: ${current.alt}`}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-        >
+      {categories.length >= 2 ? (
+        <div className={styles.filters} role="group" aria-label="Filter photos by category">
           <button
-            ref={closeRef}
             type="button"
-            className={styles.lightboxClose}
-            onClick={close}
-            aria-label="Close photo viewer"
+            className={activeCategory === null ? styles.filterActive : styles.filter}
+            aria-pressed={activeCategory === null}
+            onClick={() => chooseCategory(null)}
           >
-            ✕
+            All
           </button>
-
-          {items.length > 1 ? (
-            <>
-              <button
-                type="button"
-                className={`${styles.lightboxNav} ${styles.lightboxPrev}`}
-                onClick={() => show(openIndex - 1)}
-                aria-label="Previous photo"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                className={`${styles.lightboxNav} ${styles.lightboxNext}`}
-                onClick={() => show(openIndex + 1)}
-                aria-label="Next photo"
-              >
-                ›
-              </button>
-            </>
-          ) : null}
-
-          <figure className={styles.lightboxFigure}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={styles.lightboxImage} src={current.src} alt={current.alt} />
-            {current.caption ? (
-              <figcaption className={styles.lightboxCaption}>{current.caption}</figcaption>
-            ) : null}
-            <p className={styles.lightboxCount}>
-              {openIndex + 1} / {items.length}
-            </p>
-          </figure>
+          {categories.map((category) => (
+            <button
+              key={category}
+              type="button"
+              className={activeCategory === category ? styles.filterActive : styles.filter}
+              aria-pressed={activeCategory === category}
+              onClick={() => chooseCategory(category)}
+            >
+              {category}
+            </button>
+          ))}
         </div>
       ) : null}
+
+      {visible.length === 0 ? (
+        <p className={styles.empty} role="status">
+          No photos in this category yet.
+        </p>
+      ) : (
+        <ul className={styles.grid}>
+          {visible.map((item, index) => (
+            <li key={item.id} className={styles.cell}>
+              <button
+                type="button"
+                className={styles.photoButton}
+                onClick={() => {
+                  openerRef.current = null;
+                  show(index);
+                }}
+                ref={index === 0 ? openerRef : undefined}
+                aria-label={`Open photo: ${item.alt}`}
+              >
+                {/* Admin-uploaded photos on Supabase's CDN; next/image would need
+                  remotePatterns config and buy nothing on a masonry grid. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className={styles.photo}
+                  src={item.src}
+                  alt={item.alt}
+                  loading="lazy"
+                  decoding="async"
+                />
+                {item.caption ? <span className={styles.photoCaption}>{item.caption}</span> : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <GalleryLightbox
+        items={visible}
+        index={openIndex}
+        onClose={close}
+        onShow={show}
+        openerRef={openerRef}
+      />
     </>
   );
 }

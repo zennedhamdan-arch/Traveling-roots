@@ -1,0 +1,47 @@
+/* The full /gallery page. Same visual language as the homepage gallery
+   section — forest ground, gold eyebrow, cream headline — carried across a
+   whole page. The grid and lightbox styles live in GalleryGrid.module.css. */
+
+.page {
+  padding-block: calc(var(--nav-height) + clamp(2.5rem, 6vw, 4rem))
+    clamp(4rem, 10vw, 7rem);
+  background: var(--tr-forest);
+  color: var(--tr-cream);
+  /* The lightbox is a fixed overlay; without this the page behind could
+      scroll beneath it on iOS. Harmless everywhere else. */
+  width: 100%;
+  overflow-x: clip;
+}
+
+.inner {
+  display: grid;
+  gap: clamp(2rem, 5vw, 3rem);
+}
+
+.head {
+  display: grid;
+  gap: 0.65rem;
+  justify-items: center;
+  text-align: center;
+}
+
+.head :global(.eyebrow) {
+  color: var(--tr-gold);
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1.08;
+  margin: 0;
+  color: var(--tr-cream);
+}
+
+.lede {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--tr-sand);
+  line-height: 1.6;
+  font-size: 1.02rem;
+}

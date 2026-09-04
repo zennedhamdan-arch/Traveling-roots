@@ -34,3 +34,22 @@
   line-height: 1.6;
   font-size: 1.02rem;
 }
+
+/* --- showcase additions: empty state + full-gallery CTA ---------------------- */
+
+.cta {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(2rem, 5vw, 3rem);
+}
+
+.empty {
+  margin: 0 auto;
+  max-width: 52ch;
+  padding: clamp(1.5rem, 4vw, 2.5rem) clamp(1.25rem, 4vw, 2rem);
+  border: 1px dashed var(--tr-line-dark);
+  border-radius: var(--radius-md);
+  text-align: center;
+  color: var(--tr-sand);
+  line-height: 1.6;
+}

@@ -11,8 +11,10 @@ import { buildObjectPath, uploadFile, type UploadProgress } from "@/lib/upload";
  * Gallery manager.
  *
  * Everything the owner needs from a phone: upload photos (with real progress
- * for larger files), retitle or re-alt-text them, reorder them, hide them
- * without deleting, and delete them for good — including the stored file.
+ * for larger files), retitle or re-alt-text them, pick a category, mark the
+ * ones the homepage showcase should drift through (Featured), reorder them,
+ * hide them without deleting, and delete them for good — including the stored
+ * file.
  *
  * The storage bucket and the row policies already exist (migrations 0003 and
  * 0002); this component only uses the signed-in admin's own session, exactly
@@ -21,6 +23,9 @@ import { buildObjectPath, uploadFile, type UploadProgress } from "@/lib/upload";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // matches the gallery bucket's limit
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+
+/** The categories the database's check constraint allows (migration 0006). */
+const GALLERY_CATEGORIES = ["Food", "Restaurant", "Garden", "Events", "Atmosphere"] as const;
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
@@ -110,7 +115,9 @@ export default function GalleryManager({
 
   async function save(
     id: string,
-    patch: Partial<Pick<GalleryItemRow, "caption" | "alt_text" | "published">>,
+    patch: Partial<
+      Pick<GalleryItemRow, "caption" | "alt_text" | "published" | "featured" | "category">
+    >,
   ): Promise<void> {
     setBusyId(id);
     setError(null);
@@ -279,7 +286,9 @@ type CardProps = Readonly<{
   isLast: boolean;
   onSave: (
     id: string,
-    patch: Partial<Pick<GalleryItemRow, "caption" | "alt_text" | "published">>,
+    patch: Partial<
+      Pick<GalleryItemRow, "caption" | "alt_text" | "published" | "featured" | "category">
+    >,
   ) => Promise<void>;
   onMove: (index: number, direction: -1 | 1) => Promise<void>;
   onRemove: (row: GalleryItemRow) => Promise<void>;
@@ -344,6 +353,33 @@ function GalleryCard({
               Published
             </label>
 
+            <label className="admin-check admin-check-inline">
+              <input
+                type="checkbox"
+                checked={row.featured}
+                disabled={busy}
+                onChange={(e) => void onSave(row.id, { featured: e.target.checked })}
+              />
+              Featured
+            </label>
+
+            <label className="admin-field">
+              <span className="admin-label">Category</span>
+              <select
+                className="admin-input"
+                value={row.category ?? ""}
+                disabled={busy}
+                onChange={(e) => void onSave(row.id, { category: e.target.value || null })}
+              >
+                <option value="">—</option>
+                {GALLERY_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <div className="admin-row-gap">
               <button
                 type="button"
@@ -374,7 +410,14 @@ function GalleryCard({
             </div>
           </div>
 
-          {!row.published ? <p className="admin-muted">Hidden from the public site.</p> : null}
+          <p className="admin-muted">
+            {!row.published
+              ? "Hidden from the public site. "
+              : ""}
+            {row.featured
+              ? "Featured — appears in the homepage showcase (first 8 featured photos)."
+              : "Not featured — appears in the full gallery only."}
+          </p>
         </div>
       </div>
     </li>

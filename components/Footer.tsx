@@ -45,7 +45,7 @@ export default function Footer(): React.JSX.Element {
                 </a>
               </li>
               <li>
-                <a href={`#${SECTION_IDS.gallery}`} className={styles.link}>
+                <a href="/gallery" className={styles.link}>
                   Gallery
                 </a>
               </li>

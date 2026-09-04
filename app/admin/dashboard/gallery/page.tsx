@@ -17,9 +17,12 @@ export default async function GalleryPage(): Promise<React.JSX.Element> {
       <h1 className="admin-title">Gallery</h1>
       <p className="admin-muted admin-lede">
         Upload photos of the food and the room, give each a caption and an
-        alt-text (what the photo shows, for screen readers), and set the order
-        they appear in. Unpublished photos stay stored but are not shown —
-        hiding is enforced by the database, not just the interface.
+        alt-text (what the photo shows, for screen readers), pick a category,
+        and set the order they appear in. Mark up to 8 photos
+        as <strong>Featured</strong> to drift through the homepage showcase;
+        everything published appears on the full gallery page. Unpublished
+        photos stay stored but are not shown — hiding is enforced by the
+        database, not just the interface.
       </p>
       <GalleryManager initial={data ?? []} />
     </>

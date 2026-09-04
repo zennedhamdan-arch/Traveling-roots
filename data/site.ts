@@ -48,7 +48,7 @@ export const navLinks: readonly NavLink[] = [
   { label: "Order Pickup", href: "/order" },
   { label: "Our Story", href: `#${SECTION_IDS.story}` },
   { label: "Experiences", href: `#${SECTION_IDS.experiences}` },
-  { label: "Gallery", href: `#${SECTION_IDS.gallery}` },
+  { label: "Gallery", href: "/gallery" },
   { label: "Contact", href: `#${SECTION_IDS.contact}` },
 ];
 
@@ -168,6 +168,15 @@ export const gallery = {
   eyebrow: "Gallery",
   headline: "A look inside Traveling Roots.",
   lede: "The garden, the plates, the room — photographed as it is, no stock imagery.",
+  cta: "View Full Gallery",
+  empty:
+    "Photos are coming soon. In the meantime, the kitchen is very much real — come see it in person.",
+} as const;
+
+export const galleryPage = {
+  eyebrow: "Gallery",
+  headline: "The whole picture.",
+  lede: "Every photograph of the food, the garden and the room — as they are, no stock imagery.",
   empty:
     "Photos are coming soon. In the meantime, the kitchen is very much real — come see it in person.",
 } as const;

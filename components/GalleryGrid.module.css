@@ -212,3 +212,41 @@
     animation: none;
   }
 }
+
+/* --- category filter (shown when photos carry 2+ categories) ---------------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.filter,
+.filterActive {
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--tr-line-dark);
+  background: transparent;
+  color: var(--tr-sand);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease-out), color var(--dur) var(--ease-out),
+    background var(--dur) var(--ease-out);
+}
+
+.filter:hover,
+.filter:focus-visible {
+  border-color: var(--tr-gold);
+  color: var(--tr-cream);
+  outline: none;
+}
+
+.filterActive {
+  border-color: var(--tr-gold);
+  background: var(--tr-gold);
+  color: var(--tr-forest);
+  font-weight: 600;
+}

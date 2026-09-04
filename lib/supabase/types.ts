@@ -113,6 +113,10 @@ export type GalleryItemRow = {
   image_path: string | null;
   caption: string | null;
   alt_text: string;
+  /** Curation flag: published + featured rows feed the homepage showcase. */
+  featured: boolean;
+  /** Optional bucket: Food | Restaurant | Garden | Events | Atmosphere. */
+  category: string | null;
   published: boolean;
   sort_order: number;
 };
