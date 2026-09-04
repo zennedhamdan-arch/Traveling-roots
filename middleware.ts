@@ -4,9 +4,17 @@ import { createServerClient } from "@supabase/ssr";
 import { isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 
 /**
- * Refreshes the Supabase session cookie and gates /admin.
+ * Gates and session-refreshes /admin — and does NOTHING else.
  *
- * Two jobs, in this order:
+ * Public pages must not perform Supabase Auth work merely to render. Every
+ * non-admin request returns immediately, before any Supabase client exists:
+ * no `auth.getUser()` round-trip on the critical path of `/`, `/gallery`,
+ * `/reservation`, `/order` or the API routes. (Public content is fetched
+ * cookie-less with the anon key by lib/content — no session is involved —
+ * and only /admin pages ever read the admin's session cookie, so nothing on
+ * the public side depended on the refresh this middleware used to do there.)
+ *
+ * For /admin routes, two jobs, in this order:
  *
  *  1. Server Components cannot write cookies, so an expiring access token can
  *     only be refreshed here. Without this, an admin gets silently signed out
@@ -19,17 +27,20 @@ import { isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/sup
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isAdminRoute = pathname.startsWith("/admin");
+
+  // Defense in depth: the matcher below already limits this middleware to
+  // /admin, but if it is ever widened again, public requests must still skip
+  // all Supabase work — so the check lives here too, not only in the matcher.
+  if (!pathname.startsWith("/admin")) {
+    return NextResponse.next();
+  }
 
   // Without Supabase the admin area cannot work at all — say so plainly
   // rather than rendering a login form that can never succeed.
-  if (!isSupabaseConfigured) {
-    if (isAdminRoute && pathname !== "/admin/unavailable") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/admin/unavailable";
-      return NextResponse.redirect(url);
-    }
-    return NextResponse.next();
+  if (!isSupabaseConfigured && pathname !== "/admin/unavailable") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/unavailable";
+    return NextResponse.redirect(url);
   }
 
   let response = NextResponse.next({ request });
@@ -58,7 +69,7 @@ export async function middleware(request: NextRequest) {
 
   const isLoginRoute = pathname === "/admin/login";
 
-  if (isAdminRoute && !isLoginRoute && pathname !== "/admin/unavailable" && !user) {
+  if (!isLoginRoute && pathname !== "/admin/unavailable" && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     // Send them back where they were going once they sign in.
@@ -79,10 +90,13 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Everything except static assets. The sequence frames and images must not
-     * pay for a middleware invocation — on Vercel that is billed per request
-     * and adds latency to every frame.
+     * Admin routes only. Middleware used to run on every non-static path,
+     * which put a blocking supabase.auth.getUser() round-trip in front of
+     * every public page; now public pages, the API routes and all static
+     * assets never invoke middleware at all. (The in-code isAdminRoute guard
+     * above keeps public requests safe even if this list is ever widened.)
+     * `/admin/:path*` also matches `/admin` itself — `:path*` is zero-or-more.
      */
-    "/((?!_next/static|_next/image|favicon.ico|sequence/|images/|.*\\.(?:svg|png|jpg|jpeg|webp|avif|gif|mp4|webm|ico)$).*)",
+    "/admin/:path*",
   ],
 };
